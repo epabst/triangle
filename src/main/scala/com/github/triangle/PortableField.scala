@@ -1,6 +1,5 @@
 package com.github.triangle
 
-import com.github.scala_android.crud.common.Logging
 import collection._
 
 /** A trait for {@link PortableField} for convenience such as when defining a List of heterogeneous Fields. */

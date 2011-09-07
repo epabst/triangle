@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
-import com.github.triangle.PortableField._
+import PortableField._
 
 
 /**
@@ -24,18 +24,18 @@ class FieldTupleSpec extends Spec with MustMatchers {
     val tuple = new FieldTuple3(intField, stringField, doubleField) {
       //use it to match a single AnyRef
       Unit match {
-        case Values(integer, string, double) => {
-          integer must be (Some(10))
-          string must be (Some("Hello"))
-          double must be (Some(11.0))
+        case Values(myInt, myString, myDouble) => {
+          myInt must be (Some(10))
+          myString must be (Some("Hello"))
+          myDouble must be (Some(11.0))
         }
       }
       //use it to match a List of AnyRefs
       List(Unit) match {
-        case Values(integer, string, double) => {
-          integer must be (Some(10))
-          string must be (Some("Hello"))
-          double must be (Some(11.0))
+        case Values(myInt, myString, myDouble) => {
+          myInt must be (Some(10))
+          myString must be (Some("Hello"))
+          myDouble must be (Some(11.0))
         }
       }
     }

@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
-import com.github.triangle.PortableField._
+import PortableField._
 import scala.collection._
 
 

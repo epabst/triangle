@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
-import com.github.triangle.PortableField._
+import PortableField._
 import org.scalatest.mock.EasyMockSugar
 import collection.{immutable, mutable}
 import mutable.Buffer
@@ -21,14 +21,14 @@ import collection.JavaConversions._
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
   describe("PortableField") {
-    class MyEntity(var string: String, var number: Int)
-    class OtherEntity(var name: String, var boolean: Boolean)
+    class MyEntity(var myString: String, var number: Int)
+    class OtherEntity(var name: String, var myBoolean: Boolean)
 
     it("must be easily instantiable for an Entity") {
-      val a1 = fieldDirect[MyEntity,String](_.string, _.string_=)
+      val a1 = fieldDirect[MyEntity,String](_.myString, _.myString_=)
       val a2 = fieldDirect[MyEntity,Int](_.number, _.number_=)
       val stringField =
-        fieldDirect[MyEntity,String](_.string, _.string_=) +
+        fieldDirect[MyEntity,String](_.myString, _.myString_=) +
         readOnly[OtherEntity,String](_.name) +
         writeOnlyDirect[OtherEntity,String](_.name_=)
       val intField = fieldDirect[MyEntity,Int](_.number, _.number_=)
@@ -37,11 +37,11 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
     describe("copy") {
       it("must set defaults") {
-        val stringField = fieldDirect[MyEntity,String](_.string, _.string_=) + default("Hello")
+        val stringField = fieldDirect[MyEntity,String](_.myString, _.myString_=) + default("Hello")
 
         val myEntity1 = new MyEntity("my1", 15)
         stringField.copy(Unit, myEntity1)
-        myEntity1.string must be ("Hello")
+        myEntity1.myString must be ("Hello")
         myEntity1.number must be (15)
         //shouldn't fail
         stringField.copy(myEntity1, Unit)
@@ -67,22 +67,22 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val stringField =
           readOnly[OtherEntity,String](_.name) +
           writeOnlyDirect[OtherEntity, String](_.name_=) +
-          fieldDirect[MyEntity,String](_.string, _.string_=)
+          fieldDirect[MyEntity,String](_.myString, _.myString_=)
 
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
         stringField.copy(myEntity1, otherEntity1)
-        myEntity1.string must be ("my1")
+        myEntity1.myString must be ("my1")
         myEntity1.number must be (1)
         otherEntity1.name must be ("my1")
-        otherEntity1.boolean must be (false)
+        otherEntity1.myBoolean must be (false)
 
         val otherEntity2 = new OtherEntity("other2", true)
         val myEntity2 = new MyEntity("my2", 2)
         stringField.copy(otherEntity2, myEntity2)
         otherEntity2.name must be ("other2")
-        otherEntity2.boolean must be (true)
-        myEntity2.string must be ("other2")
+        otherEntity2.myBoolean must be (true)
+        myEntity2.myString must be ("other2")
         myEntity2.number must be (2)
 
         stringField.copy(new Object, myEntity2) //does nothing
@@ -138,7 +138,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val otherEntity1 = new OtherEntity("other1", false)
         val stringField = mapField[String]("stringValue") +
           fieldDirect[OtherEntity,String](_.name, _.name_=) +
-          fieldDirect[MyEntity,String](_.string, _.string_=)
+          fieldDirect[MyEntity,String](_.myString, _.myString_=)
         stringField.getterFromItem.isDefinedAt(List(myEntity1, otherEntity1)) must be (true)
         stringField.getterFromItem.isDefinedAt(List(new Object)) must be (false)
         stringField.getterFromItem(List(myEntity1, otherEntity1)) must be (Some("other1"))
