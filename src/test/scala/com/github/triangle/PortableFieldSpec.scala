@@ -8,7 +8,6 @@ import PortableField._
 import org.scalatest.mock.EasyMockSugar
 import collection.{immutable, mutable}
 import mutable.Buffer
-import collection.JavaConversions._
 
 
 /**
@@ -20,24 +19,25 @@ import collection.JavaConversions._
 
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
+  val unitAsRef = Unit.asInstanceOf[AnyRef]
+
   describe("PortableField") {
     class MyEntity(var myString: String, var number: Int)
     class OtherEntity(var name: String, var myBoolean: Boolean)
 
     it("must be easily instantiable for an Entity") {
-      val a1 = fieldDirect[MyEntity,String](_.myString, _.myString_=)
-      val a2 = fieldDirect[MyEntity,Int](_.number, _.number_=)
-      val stringField =
-        fieldDirect[MyEntity,String](_.myString, _.myString_=) +
-        readOnly[OtherEntity,String](_.name) +
-        writeOnlyDirect[OtherEntity,String](_.name_=)
-      val intField = fieldDirect[MyEntity,Int](_.number, _.number_=)
-      val readOnlyField = readOnly[MyEntity,Int](_.number)
+      fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
+      fieldDirect[MyEntity,Int](e => e.number, e => e.number = _)
+      fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _) +
+        readOnly[OtherEntity,String](e => e.name) +
+        writeOnlyDirect[OtherEntity,String](e => e.name = _)
+      fieldDirect[MyEntity,Int](e => e.number, e => e.number = _)
+      readOnly[MyEntity,Int](e => e.number)
     }
 
     describe("copy") {
       it("must set defaults") {
-        val stringField = fieldDirect[MyEntity,String](_.myString, _.myString_=) + default("Hello")
+        val stringField = fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _) + default("Hello")
 
         val myEntity1 = new MyEntity("my1", 15)
         stringField.copy(Unit, myEntity1)
@@ -65,9 +65,9 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
       it("must copy from one to multiple") {
         val stringField =
-          readOnly[OtherEntity,String](_.name) +
-          writeOnlyDirect[OtherEntity, String](_.name_=) +
-          fieldDirect[MyEntity,String](_.myString, _.myString_=)
+          readOnly[OtherEntity,String](e => e.name) +
+          writeOnlyDirect[OtherEntity, String](e => e.name = _) +
+          fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
 
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
@@ -137,8 +137,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
         val stringField = mapField[String]("stringValue") +
-          fieldDirect[OtherEntity,String](_.name, _.name_=) +
-          fieldDirect[MyEntity,String](_.myString, _.myString_=)
+          fieldDirect[OtherEntity,String](e => e.name, e => e.name = _) +
+          fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
         stringField.getterFromItem.isDefinedAt(List(myEntity1, otherEntity1)) must be (true)
         stringField.getterFromItem.isDefinedAt(List(new Object)) must be (false)
         stringField.getterFromItem(List(myEntity1, otherEntity1)) must be (Some("other1"))
@@ -152,11 +152,11 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     describe("getterFromItem") {
       it("must get from the first applicable item with Some value") {
         val fieldWithDefault = default(12) + mapField[Int]("count")
-        fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any], Unit)) must be (Some(12))
+        fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any], unitAsRef)) must be (Some(12))
         fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any])) must be (None)
 
         val fieldWithoutDefault = mapField[Int]("count")
-        fieldWithoutDefault.getterFromItem(List(immutable.Map.empty[String,Any], Unit)) must be (None)
+        fieldWithoutDefault.getterFromItem(List(immutable.Map.empty[String,Any], unitAsRef)) must be (None)
 
         val fieldWithDeprecatedName = mapField[Int]("count") + mapField[Int]("size")
         fieldWithDeprecatedName.getterFromItem(List(immutable.Map[String,Any]("size" -> 4))) must be (Some(4))
@@ -185,7 +185,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       it("must have a working transformer") {
         val formattedField = formatted[Int](mapField[String]("countString"))
         //qualified to point out that it's immutable
-        val result = formattedField.transformer(immutable.Map.empty[String,Int])(4)
+        val result: Map[String,Int] = formattedField.transformer(immutable.Map.empty[String,Int])(4)
         result.get("countString") must be (Some("4"))
       }
     }
@@ -194,7 +194,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       it("must delegate to setter for mutable objects") {
         val stringField = mapField[String]("greeting")
         val map = mutable.Map[String,Any]()
-        val result = stringField.transformer(map)(Some("hello"))
+        val result: mutable.Map[String,Any] = stringField.transformer(map)(Some("hello"))
         result.get("greeting") must be (Some("hello"))
         result must be (map)
       }
@@ -203,10 +203,10 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val stringField = mapField[String]("greeting")
         val intField = mapField[Int]("count")
         //qualified to point out that it's immutable
-        val result = stringField.transformer(immutable.Map.empty[String,Any])(Some("hello"))
+        val result: Map[String,Any] = stringField.transformer(immutable.Map.empty[String,Any])(Some("hello"))
         result.get("greeting") must be (Some("hello"))
 
-        val result2 = intField.transformer(result)(Some(10))
+        val result2: Map[String,Any] = intField.transformer(result)(Some(10))
         result2.get("greeting") must be (Some("hello"))
         result2.get("count") must be (Some(10))
       }
@@ -215,7 +215,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val stringField = mapField[String]("greeting") +
                 transformOnlyDirect[immutable.Map[String,String],String](map => ignored => map + ("greeting" -> map("greeting").toUpperCase), map => map)
         //qualified to point out that it's immutable
-        val result = stringField.transformer(immutable.Map.empty[String,String])(Some("hello"))
+        val result: Map[String,String] = stringField.transformer(immutable.Map.empty[String,String])(Some("hello"))
         result.get("greeting") must be (Some("HELLO"))
       }
     }
@@ -261,7 +261,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
           }).anyTimes
         }
         whenExecuting(mockField) {
-          field.getterFromItem(List(Unit, "String")) must be (Some("success"))
+          field.getterFromItem(List(unitAsRef, "String")) must be (Some("success"))
         }
       }
     }
