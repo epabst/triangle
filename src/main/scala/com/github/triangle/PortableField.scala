@@ -91,7 +91,7 @@ trait PortableValue {
  * import com.github.triangle.PortableField._
  * import com.github.scala_android.crud.persistence.CursorField._
  * import com.github.scala_android.crud.persistence.PersistedType._
- * import com.github.scala_android.crud.ViewField._
+ * import com.github.scala_android.crud.view.ViewField._
  *
  * val fields = List(
  *   persisted[String]("name") + viewId(R.id.name, textView),
