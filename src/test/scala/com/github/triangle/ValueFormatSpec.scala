@@ -31,12 +31,6 @@ class ValueFormatSpec extends Spec with MustMatchers {
       val format = ValueFormat.basicFormat[T]
       itMustFormatAndParse(format, value)
     }
-
-    it("must fail to construct if no type specified") {
-      intercept[IllegalArgumentException] {
-        basicFormat[AnyVal]
-      }
-    }
   }
 
   describe("TextValueFormat") {
@@ -89,7 +83,7 @@ class ValueFormatSpec extends Spec with MustMatchers {
     it("must handle parse various number formats") {
       format.toValue("$1.00").get must be(1.0)
       format.toValue("$1").get must be(1.0)
-      format.toValue("1.00") must be(None)
+      format.toValue("1.00").get must be(1.0)
       format.toValue("($1.00)").get must be(-1.0)
       format.toValue("($1)").get must be(-1.0)
       //do these later if desired

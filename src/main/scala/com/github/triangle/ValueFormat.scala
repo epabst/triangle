@@ -1,8 +1,9 @@
 package com.github.triangle
 
-import java.text.{ParsePosition, Format, NumberFormat}
+import java.text.{ParsePosition, Format}
 import java.util.{Calendar, Date}
 import scala.Enumeration
+import Converter._
 
 /**
  * A value format.
@@ -15,6 +16,21 @@ trait ValueFormat[T] {
   def toString(value: T): String = value.toString
 
   def toValue(s: String): Option[T]
+}
+
+class ConvertingValueFormat[T](toValueConverter: Converter[String,T],
+                               toStringConverter: Converter[T,String] = anyToString) extends ValueFormat[T] {
+  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
+
+  def toValue(s: String) = toValueConverter.convert(s)
+}
+
+class GenericConvertingValueFormat[T](toValueConverter: GenericConverter[String,T],
+                                      toStringConverter: Converter[T, String] = anyToString)(implicit manifest: Manifest[T])
+        extends ValueFormat[T] {
+  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
+
+  def toValue(s: String) = toValueConverter.convertTo[T](s)
 }
 
 class TextValueFormat[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}) extends ValueFormat[T] {
@@ -34,16 +50,10 @@ class FlexibleValueFormat[T](formats: List[ValueFormat[T]]) extends ValueFormat[
 }
 
 object ValueFormat {
-  private lazy val currencyFormat = NumberFormat.getCurrencyInstance
-  private lazy val currencyEditFormat = {
-    val editFormat = NumberFormat.getNumberInstance
-    editFormat.setMinimumFractionDigits(currencyFormat.getMinimumFractionDigits)
-    editFormat.setMaximumFractionDigits(currencyFormat.getMaximumFractionDigits)
-    editFormat
-  }
-  lazy val amountFormats = List(currencyEditFormat, currencyFormat, NumberFormat.getNumberInstance).map(new TextValueFormat[Double](_, _.asInstanceOf[Number].doubleValue))
-
   lazy val dateFormats = List(new java.text.SimpleDateFormat("MM/dd/yyyy"), new java.text.SimpleDateFormat("dd MMM yyyy")).map(new TextValueFormat[Date](_))
+
+  def convertingFormat[T](toValueConverter: Converter[String,T], toStringConverter: Converter[T,String] = anyToString) =
+    new ConvertingValueFormat[T](toValueConverter, toStringConverter)
 
   def toCalendarFormat(format: ValueFormat[Date]): ValueFormat[Calendar] = new ValueFormat[Calendar] {
     override def toString(value: Calendar) = format.toString(value.getTime)
@@ -61,37 +71,11 @@ object ValueFormat {
     def toValue(s: String) = enum.values.find(_.toString == s).map(_.asInstanceOf[T])
   }
 
-  def basicFormat[T <: AnyVal](implicit manifest: Manifest[T]): ValueFormat[T] = {
-    val converter: String => T = {
-      manifest.erasure match {
-        case x: Class[_] if (x == classOf[Int]) => _.toInt.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Long]) => _.toLong.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Short]) => _.toShort.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Byte]) => _.toByte.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Double]) => _.toDouble.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Float]) => _.toFloat.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Boolean]) => _.toBoolean.asInstanceOf[T]
-        case _ => throw new IllegalArgumentException("Unknown primitive type: " + classManifest.erasure)
-      }
-    }
-    format(converter, _.toString)
-  }
+  def basicFormat[T <: AnyVal](implicit manifest: Manifest[T]): ValueFormat[T] =
+    new GenericConvertingValueFormat[T](stringToAnyVal, anyToString)
 
-  def format[T](convertFromString: String => T, convertToString: T => String): ValueFormat[T] =
-    formatOption[T](s => {
-      try { Some(convertFromString(s)) }
-      catch { case e: IllegalArgumentException => None }
-    }, convertToString)
-
-  def formatOption[T](convertFromString: String => Option[T], convertToString: T => String): ValueFormat[T] =
-    new ValueFormat[T] {
-      def toValue(s: String) = convertFromString(s)
-
-      override def toString(value: T) = convertToString(value)
-    }
-
-  lazy val currencyValueFormat = new FlexibleValueFormat[Double](amountFormats)
-  lazy val currencyDisplayValueFormat = new TextValueFormat[Double](currencyFormat, _.asInstanceOf[Number].doubleValue)
+  lazy val currencyValueFormat = convertingFormat(stringToCurrency, currencyToEditString)
+  lazy val currencyDisplayValueFormat = convertingFormat(stringToCurrency, currencyToString)
   lazy val dateValueFormat = new FlexibleValueFormat[Date](dateFormats)
   lazy val calendarValueFormat = toCalendarFormat(dateValueFormat)
 }
