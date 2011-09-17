@@ -531,6 +531,13 @@ object PortableField {
     override def toString = "mapField(" + name + ")"
   }
 
+  def converted[A,B](converter1: Converter[A,B], converter2: Converter[B,A], field: PortableField[B]): PortableField[A] =
+    new ConvertedField[A,B](field) {
+      def convert(value: B) = converter2.convert(value)
+
+      def unconvert(value: A) = converter1.convert(value)
+    }
+
   def formatted[T](format: ValueFormat[T], field: PortableField[String]) = new FormattedField(format, field)
 
   /**

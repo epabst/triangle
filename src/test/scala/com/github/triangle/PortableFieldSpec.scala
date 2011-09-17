@@ -8,6 +8,7 @@ import PortableField._
 import org.scalatest.mock.EasyMockSugar
 import collection.{immutable, mutable}
 import mutable.Buffer
+import Converter._
 
 
 /**
@@ -187,6 +188,24 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         //qualified to point out that it's immutable
         val result: Map[String,Int] = formattedField.transformer(immutable.Map.empty[String,Int])(4)
         result.get("countString") must be (Some("4"))
+      }
+    }
+
+    describe("converted") {
+      it("must convert values in both directions") {
+        val field: PortableField[Double] = converted(currencyToEditString, stringToCurrency, mapField[String]("amountString"))
+        field(Map("amountString" -> "12.34")) must be (12.34)
+
+        val map = mutable.Map[String,Any]()
+        field.setValue(map, Some(16))
+        map("amountString") must be ("16.00")
+      }
+
+      it("must have a working transformer") {
+        val field = converted(currencyToString, stringToCurrency, mapField[String]("amountString"))
+        //qualified to point out that it's immutable
+        val result: Map[String,Double] = field.transformer(immutable.Map.empty[String,Double])(4.0)
+        result.get("amountString") must be (Some("$4.00"))
       }
     }
 
