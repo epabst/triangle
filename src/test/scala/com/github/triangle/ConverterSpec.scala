@@ -90,16 +90,16 @@ class ConverterSpec extends Spec with MustMatchers {
       val A = Value("A")
       val B = Value("B")
     }
-    val converter = stringToEnum(MyEnum)
+    val converter = stringToEnum[MyEnum.Value](MyEnum)
 
     it("must convert") {
-      converter.convertTo[MyEnum.Value]("A") must be (Some(MyEnum.A))
-      converter.convertTo[MyEnum.Value]("B") must be (Some(MyEnum.B))
+      converter.convert("A") must be (Some(MyEnum.A))
+      converter.convert("B") must be (Some(MyEnum.B))
     }
 
     it("must return None if unable to convert") {
-      converter.convertTo[MyEnum.Value]("C") must be (None)
-      converter.convertTo[MyEnum.Value]("") must be (None)
+      converter.convert("C") must be (None)
+      converter.convert("") must be (None)
     }
   }
 }

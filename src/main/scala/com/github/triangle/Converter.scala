@@ -94,8 +94,7 @@ object Converter {
     def convert(from: Double) = Some(currencyEditFormat.format(from))
   }
 
-  def stringToEnum(enumeration: Enumeration): GenericConverter[String,Enumeration#Value] = new GenericConverter[String,Enumeration#Value] {
-    def convertTo[T <: Enumeration#Value](from: String)(implicit manifest: Manifest[T]) =
-      enumeration.values.find(_.toString == from).map(_.asInstanceOf[T])
+  def stringToEnum[T <: Enumeration#Value](enumeration: Enumeration): Converter[String,T] = new Converter[String,T] {
+    def convert(from: String) = enumeration.values.find(_.toString == from).map(_.asInstanceOf[T])
   }
 }

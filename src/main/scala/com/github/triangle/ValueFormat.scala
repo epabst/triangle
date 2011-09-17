@@ -65,11 +65,7 @@ object ValueFormat {
     }
   }
 
-  def enumFormat[T <: Enumeration#Value](enum: Enumeration): ValueFormat[T] = new ValueFormat[T] {
-    override def toString(enumValue: T) = enumValue.toString
-
-    def toValue(s: String) = enum.values.find(_.toString == s).map(_.asInstanceOf[T])
-  }
+  def enumFormat[T <: Enumeration#Value](enum: Enumeration): ValueFormat[T] = convertingFormat[T](stringToEnum(enum))
 
   def basicFormat[T <: AnyVal](implicit manifest: Manifest[T]): ValueFormat[T] =
     new GenericConvertingValueFormat[T](stringToAnyVal, anyToString)
