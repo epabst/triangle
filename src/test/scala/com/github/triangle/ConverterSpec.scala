@@ -5,6 +5,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 import Converter._
+import java.util.{Calendar, GregorianCalendar, Date}
+import java.text.DateFormat
 
 /**
  * A behavior specification for {@link Converter}.
@@ -50,6 +52,32 @@ class ConverterSpec extends Spec with MustMatchers {
       stringToAnyVal.convertTo[Double]("foo") must be (None)
       stringToAnyVal.convertTo[Float]("foo") must be (None)
       stringToAnyVal.convertTo[Boolean]("foo") must be (None)
+    }
+  }
+
+  describe("stringToDate") {
+    it("must parse various date formats") {
+      stringToDate.convert("1/19/2005").get must be(new GregorianCalendar(2005, Calendar.JANUARY, 19).getTime)
+      stringToDate.convert("12/1/2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
+      stringToDate.convert("1 Dec 2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
+    }
+
+    it("must handle the default format for the current Locale") {
+      val date = new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime
+      val string = DateFormat.getDateInstance.format(date)
+      stringToDate.convert(string).get must be(date)
+    }
+  }
+
+  describe("dateToString") {
+    it("must format a date") {
+      dateToString.convert(new Date()).isDefined must be (true)
+    }
+
+    it("must use the default format for the current Locale") {
+      val date = new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime
+      val expectedString = DateFormat.getDateInstance.format(date)
+      dateToString.convert(date).get must be(expectedString)
     }
   }
 

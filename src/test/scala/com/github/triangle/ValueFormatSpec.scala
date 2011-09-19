@@ -33,25 +33,6 @@ class ValueFormatSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("TextValueFormat") {
-    it("must convert numbers") {
-      itMustParseNumbers[Long](123)
-      itMustParseNumbers[Int](123)
-      itMustParseNumbers[Short](123)
-      itMustParseNumbers[Byte](123)
-    }
-
-    it("must return None if unable to parse") {
-      val format = new TextValueFormat[Int](NumberFormat.getIntegerInstance)
-      format.toValue("blah") must be (None)
-    }
-
-    def itMustParseNumbers[T](value: T)(implicit m: Manifest[T]) {
-      val format = new TextValueFormat[T](NumberFormat.getIntegerInstance)
-      itMustFormatAndParse(format, value)
-    }
-  }
-
   describe("currencyValueFormat") {
     val format = currencyValueFormat
 

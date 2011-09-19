@@ -1,6 +1,7 @@
 package com.github.triangle
 
-import java.text.{Format, ParsePosition, NumberFormat}
+import java.util.Date
+import java.text.{DateFormat, Format, ParsePosition, NumberFormat}
 
 /**
  * A converter from one type to another.
@@ -33,8 +34,8 @@ trait Converter[-A,B] extends GenericConverter[A,B] {
   def convertTo[T <: B](from: A)(implicit manifest: Manifest[T]) = convert(from).map(_.asInstanceOf[T])
 }
 
-protected abstract class SimpleConverter[-A,B] extends Converter[A,B] {
-  def attemptConvert(from: A): B
+abstract class SimpleConverter[-A,B] extends Converter[A,B] {
+  protected def attemptConvert(from: A): B
 
   def convert(from: A) = try { Some(attemptConvert(from)) } catch { case e: IllegalArgumentException => None }
 }
@@ -86,13 +87,18 @@ object Converter {
       new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
   )
 
-  lazy val currencyToString: Converter[Double,String] = new Converter[Double,String] {
-    def convert(from: Double) = Some(currencyFormat.format(from))
+  def converter[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
+    def convert(from: A) = f(from)
   }
 
-  lazy val currencyToEditString: Converter[Double,String] = new Converter[Double,String] {
-    def convert(from: Double) = Some(currencyEditFormat.format(from))
-  }
+  def formatToString[T](format: Format): Converter[T,String] = converter[T,String](value => Some(format.format(value)))
+
+  lazy val currencyToString: Converter[Double,String] = formatToString[Double](currencyFormat)
+  lazy val currencyToEditString: Converter[Double,String] = formatToString[Double](currencyEditFormat)
+
+  private lazy val dateFormats = List(DateFormat.getDateInstance, new java.text.SimpleDateFormat("MM/dd/yyyy"), new java.text.SimpleDateFormat("dd MMM yyyy"))
+  lazy val stringToDate = new CompositeDirectConverter[String,Date](dateFormats.map(new ParseFormatConverter[Date](_)))
+  lazy val dateToString = formatToString[Date](DateFormat.getDateInstance)
 
   def stringToEnum[T <: Enumeration#Value](enumeration: Enumeration): Converter[String,T] = new Converter[String,T] {
     def convert(from: String) = enumeration.values.find(_.toString == from).map(_.asInstanceOf[T])
