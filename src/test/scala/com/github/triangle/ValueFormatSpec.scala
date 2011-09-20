@@ -6,6 +6,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 import java.text.NumberFormat
 import ValueFormat._
+import java.util.{Calendar, GregorianCalendar}
 
 /**
  * A behavior specification for {@link ValueFormat}.
@@ -30,6 +31,18 @@ class ValueFormatSpec extends Spec with MustMatchers {
     def itMustConvertBetweenTypes[T <: AnyVal](value: T)(implicit m: Manifest[T]) {
       val format = ValueFormat.basicFormat[T]
       itMustFormatAndParse(format, value)
+    }
+  }
+
+  describe("persistedDateFormat") {
+    val format = persistedDateFormat
+
+    it("must parse correctly") {
+      format.toValue("2011-02-01").get must be(new GregorianCalendar(2011, Calendar.FEBRUARY, 1).getTime)
+    }
+
+    it("must format correctly") {
+      format.toString(new GregorianCalendar(2011, Calendar.FEBRUARY, 1).getTime) must be ("2011-02-01")
     }
   }
 

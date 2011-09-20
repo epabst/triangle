@@ -3,6 +3,7 @@ package com.github.triangle
 import java.util.{Calendar, Date}
 import scala.Enumeration
 import Converter._
+import java.text.{SimpleDateFormat, Format}
 
 /**
  * A value format.
@@ -46,6 +47,9 @@ object ValueFormat {
     }
   }
 
+  def textValueFormat[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}): ValueFormat[T] =
+    convertingFormat[T](new ParseFormatConverter[T](format, obj2Value), formatToString[T](format))
+
   def enumFormat[T <: Enumeration#Value](enum: Enumeration): ValueFormat[T] = convertingFormat[T](stringToEnum(enum))
 
   def basicFormat[T <: AnyVal](implicit manifest: Manifest[T]): ValueFormat[T] =
@@ -55,4 +59,5 @@ object ValueFormat {
   lazy val currencyDisplayValueFormat = convertingFormat(stringToCurrency, currencyToString)
   lazy val dateValueFormat = convertingFormat(stringToDate, dateToString)
   lazy val calendarValueFormat = toCalendarFormat(dateValueFormat)
+  lazy val persistedDateFormat = textValueFormat[Date](new SimpleDateFormat("yyyy-MM-dd"))
 }
