@@ -91,6 +91,9 @@ object Converter {
     def convert(from: A) = f(from)
   }
 
+  lazy val dateToLong = converter[Date, Long](d => Some(d.getTime))
+  lazy val longToDate = converter[Long, Date](l => Some(new Date(l)))
+
   def formatToString[T](format: Format): Converter[T,String] = converter[T,String](value => Some(format.format(value)))
 
   lazy val currencyToString: Converter[Double,String] = formatToString[Double](currencyFormat)
