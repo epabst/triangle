@@ -531,6 +531,10 @@ object PortableField {
     override def toString = "mapField(" + name + ")"
   }
 
+  /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
+  def adjustment[S](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
+    default[Unit](Unit) + writeOnly[S,Unit](s => u => adjuster(s))
+
   def converted[A,B](converter1: Converter[A,B], converter2: Converter[B,A], field: PortableField[B]): PortableField[A] =
     new ConvertedField[A,B](field) {
       def convert(value: B) = converter2.convert(value)

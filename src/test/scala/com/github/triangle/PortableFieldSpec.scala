@@ -10,7 +10,6 @@ import collection.{immutable, mutable}
 import mutable.Buffer
 import Converter._
 
-
 /**
  * A behavior specification for {@link PortableField}.
  * @author Eric Pabst (epabst@gmail.com)
@@ -97,6 +96,13 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val stringField = default("Hello")
         stringField.getter.isDefinedAt(List("bogus list")) must be (false)
         stringField.getter(Unit) must be (Some("Hello"))
+      }
+    }
+
+    describe("adjustment") {
+      it("must always happen when copying from Unit and it's the right kind of subject") {
+        val adjust = adjustment[collection.mutable.Buffer[String]] { _.append("world") }
+        adjust.transform(collection.mutable.Buffer[String]("hello"), Unit).toList must equal(List("hello", "world"))
       }
     }
 
