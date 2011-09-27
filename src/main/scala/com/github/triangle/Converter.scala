@@ -1,7 +1,7 @@
 package com.github.triangle
 
-import java.util.Date
 import java.text.{DateFormat, Format, ParsePosition, NumberFormat}
+import java.util.{Calendar, Date}
 
 /**
  * A converter from one type to another.
@@ -93,6 +93,13 @@ object Converter {
 
   lazy val dateToLong = converter[Date, Long](d => Some(d.getTime))
   lazy val longToDate = converter[Long, Date](l => Some(new Date(l)))
+
+  lazy val dateToCalendar = converter[Date, Calendar] { date =>
+    val calendar = Calendar.getInstance
+    calendar.setTime(date)
+    Some(calendar)
+  }
+  lazy val calendarToDate = converter[Calendar, Date](c => Some(c.getTime))
 
   def formatToString[T](format: Format): Converter[T,String] = converter[T,String](value => Some(format.format(value)))
 

@@ -38,13 +38,9 @@ object ValueFormat {
     new ConvertingValueFormat[T](toValueConverter, toStringConverter)
 
   def toCalendarFormat(format: ValueFormat[Date]): ValueFormat[Calendar] = new ValueFormat[Calendar] {
-    override def toString(value: Calendar) = format.toString(value.getTime)
+    override def toString(value: Calendar) = format.toString(calendarToDate.convert(value).get)
 
-    def toValue(s: String) = format.toValue(s).map { date =>
-      val calendar = Calendar.getInstance
-      calendar.setTime(date)
-      calendar
-    }
+    def toValue(s: String) = format.toValue(s).map(dateToCalendar.convert(_).get)
   }
 
   def textValueFormat[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}): ValueFormat[T] =
