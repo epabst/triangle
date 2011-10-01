@@ -20,6 +20,22 @@
   <version>0.3-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Triangle Mapping Framework</name>
+  <url>https://github.com/epabst/triangle</url>
+  <inceptionYear>2011</inceptionYear>
+  <developers>
+    <developer><name>Eric Pabst</name></developer>
+  </developers>
+  <licenses>
+    <license>
+      <name>Apache 2.0 License</name>
+      <url>http://maven.apache.org/license.html</url>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:git://github.com/epabst/triangle.git</connection>
+    <developerConnection>scm:git:https://epabst@github.com/epabst/triangle.git</developerConnection>
+    <url>https://github.com/epabst/triangle</url>
+  </scm>
   <properties>
     <scala.version>2.8.1</scala.version>
   </properties>
