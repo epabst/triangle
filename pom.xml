@@ -53,6 +53,17 @@
       <url>http://scala-tools.org/repo-releases</url>
     </pluginRepository>
   </pluginRepositories>
+  <distributionManagement>
+    <repository>
+      <id>scala-tools.org</id>
+      <url>http://nexus.scala-tools.org/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>scala-tools.org</id>
+      <url>http://nexus.scala-tools.org/content/repositories/snapshots/</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
