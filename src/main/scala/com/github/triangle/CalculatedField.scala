@@ -9,7 +9,7 @@ package com.github.triangle
  */
 trait CalculatedField[T] extends PortableField[T] with NoTransformer[T] with FieldTuple {
   /**
-   * Calculate the value.  The <code>Values</code> extractor should be used to get the other field values:
+   * Calculate the value.  The {{{Values}}} extractor should be used to get the other field values:
    * <pre>
    *   case Values(value1, value2) => Some(value1 * value2)
    * </pre>

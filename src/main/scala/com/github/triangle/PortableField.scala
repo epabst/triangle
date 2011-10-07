@@ -2,42 +2,42 @@ package com.github.triangle
 
 import collection._
 
-/** A trait for {@link PortableField} for convenience such as when defining a List of heterogeneous Fields. */
+/** A trait for [[com.github.triangle.PortableField]] for convenience such as when defining a List of heterogeneous Fields. */
 trait BaseField {
   /**
-   * Copies this field, the same as {@link #copy(AnyRef,AnyRef)} except that
-   * the copying from <code>from</code> happens immediately (on the current thread),
+   * Copies this field, the same as {{{copy(AnyRef,AnyRef)}}} except that
+   * the copying from {{{from}}} happens immediately (on the current thread),
    * and the returned PortableValue can copy into the target on a separate thread, if desired..
    * It's a clean separation so that each step of the copy only accesses one of the objects.
-   * @returns a PortableValue that copies the value into its parameter
+   * @return a PortableValue that copies the value into its parameter
    */
   def copyFrom(from: AnyRef): PortableValue
 
   /**
-   * Copies this field from the first applicable item in <code>fromItems</code>.
-   * @returns a PortableValue that copies the value into its parameter
+   * Copies this field from the first applicable item in {{{fromItems}}}.
+   * @return a PortableValue that copies the value into its parameter
    */
   def copyFromItem(fromItems: List[AnyRef]): PortableValue
 
   /**
-   * Copies this field from <code>from</code> to <code>to</code>, if possible.
+   * Copies this field from {{{from}}} to {{{to}}}, if possible.
    */
   def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to) }
 
   /**
-   * Copies this field from the first applicable item in <code>fromItems</code> to <code>to</code>, if possible.
+   * Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible.
    */
   def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(fromItems).copyTo(to) }
 
   /**
-   * Transforms the <code>initial</code> subject using the <code>data</code> for this field..
-   * @returns the transformed subject, which could be the initial instance
+   * Transforms the {{{initial}}} subject using the {{{data}}} for this field..
+   * @return the transformed subject, which could be the initial instance
    */
   def transform[S <: AnyRef](initial: S, data: AnyRef): S
 
   /**
-   * Transforms the <code>initial</code> subject using the first applicable item in <code>dataItems</code> for this field..
-   * @returns the transformed subject, which could be the initial instance
+   * Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
+   * @return the transformed subject, which could be the initial instance
    */
   def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S
 
@@ -67,18 +67,18 @@ trait BaseField {
 
 trait PortableValue {
   /**
-   * Copies this value to <code>to</code>, if possible.
+   * Copies this value to {{{to}}}, if possible.
    */
   def copyTo(to: AnyRef)
 
   /**
-   * Copies this value to <code>to</code> without seeing if the setter isDefinedAt that <code>to</code>.
+   * Copies this value to {{{to}}} without seeing if the setter isDefinedAt that {{{to}}}.
    */
   protected[triangle] def copyToDefinedAt(to: AnyRef)
 
   /**
-   * Transforms the <code>initial</code> subject using this value.
-   * @returns the transformed subject, which could be the initial instance
+   * Transforms the {{{initial}}} subject using this value.
+   * @return the transformed subject, which could be the initial instance
    */
   def transform[S <: AnyRef](initial: S): S
 }
@@ -129,9 +129,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   /**
-   * Gets the value, similar to {@link Map#apply}, and the value must not be None.
+   * Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
    * @see #getter
-   * @returns the value
+   * @return the value
    * @throws NoSuchElementException if the value was None
    * @throws MatchError if subject is not an applicable type
    */
@@ -143,7 +143,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def setter: PartialFunction[AnyRef,Option[T] => Unit]
 
   /**
-   * Sets a value in <code>subject</code> by using all embedded PortableFields that can handle it.
+   * Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
    * @return true if any were successful
    */
   def setValue(subject: AnyRef, value: Option[T]): Boolean = {
@@ -155,8 +155,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /**
    * PartialFunction for transforming an AnyRef using an optional value.
-   * This delegates to <code>setter</code> for mutable objects.
-   * <code>transformer(foo)(value)<code> should return a transformed version of foo (which could be the same instance if mutable).
+   * This delegates to {{{setter}}} for mutable objects.
+   * {{{transformer(foo)(value){{{ should return a transformed version of foo (which could be the same instance if mutable).
    * @param a subject to be transformed, whether immutable or mutable
    */
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
@@ -324,7 +324,7 @@ trait SubjectField { self: PortableField[_] =>
 }
 
 /**
- * {@PortableField} support for getting a value as an Option if <code>subject</code> is of type S.
+ * {@PortableField} support for getting a value as an Option if {{{subject}}} is of type S.
  * @param T the value type
  * @param S the Readable type to get the value out of
  */
@@ -350,7 +350,7 @@ trait TransformerUsingSetter[T] extends PortableField[T] {
 }
 
 /**
- * {@PortableField} support for setting a value if <code>subject</code> is of type S.
+ * {@PortableField} support for setting a value if {{{subject}}} is of type S.
  * This is a trait so that it can be mixed with FieldGetter.
  * @param S the Writable type to put the value into
  */
@@ -463,7 +463,7 @@ object PortableField {
     writeOnly[S,T](fromDirect(setter1, clearer))
 
   /**
-   * {@PortableField} support for transforming a subject using a value if <code>subject</code> is of type S.
+   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
    * @param S the Subject type to transform using the value
    */
   def transformOnly[S <: AnyRef,T](theTransform: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
@@ -479,7 +479,7 @@ object PortableField {
     }
 
   /**
-   * {@PortableField} support for transforming a subject using a value if <code>subject</code> is of type S.
+   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
    * theTransform operates on a value directly, rather than on an Option.
    * The clearer is used when the value is None.
    * @param S the Subject type to transform using the value
@@ -492,7 +492,7 @@ object PortableField {
       }
     })
 
-  /** Defines a default for a field value, used when copied from {@link Unit}. */
+  /** Defines a default for a field value, used when copied from [[scala.runtime.Unit]]. */
   def default[T](value: => T): PortableField[T] = new PortableField[T] with NoSetter[T] with NoTransformer[T] {
     def getter = { case Unit => Some(value) }
 

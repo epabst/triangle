@@ -12,7 +12,7 @@ import java.util.{Calendar, Date}
 
 trait GenericConverter[-A,-B] {
   /**
-   * Converts from <code>from</code> to the new type if possible.
+   * Converts from {{{from}}} to the new type if possible.
    */
   def convertTo[T <: B](from: A)(implicit manifest: Manifest[T]): Option[T]
 }
@@ -27,7 +27,7 @@ protected abstract class SimpleGenericConverter[-A,-B] extends GenericConverter[
 
 trait Converter[-A,B] extends GenericConverter[A,B] {
   /**
-   * Converts from <code>from</code> to the new type if possible.
+   * Converts from {{{from}}} to the new type if possible.
    */
   def convert(from: A): Option[B]
 

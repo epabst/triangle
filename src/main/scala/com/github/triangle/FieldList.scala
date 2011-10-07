@@ -3,7 +3,7 @@ package com.github.triangle
 import scala.collection._
 
 /**
- * A trait that has a list of Fields.  The only requirement is that <code>fields</code> be defined.
+ * A trait that has a list of Fields.  The only requirement is that {{{fields}}} be defined.
  * It has helpful methods that can operate on them.
  * It implements BaseField in order to use copy methods that return a PortableValue which represents a composite value.
  * @author Eric Pabst (epabst@gmail.com)

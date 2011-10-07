@@ -12,12 +12,12 @@ trait FieldTuple extends Product {
   type ValuesTuple <: Product
 
   /**
-   * Gets a Tuple with the results of calling each getter with <code>readable</code> as the parameter.
+   * Gets a Tuple with the results of calling each getter with {{{readable}}} as the parameter.
    */
   def valuesTuple(readable: AnyRef): ValuesTuple
 
   /**
-   * Gets a Tuple with the results of calling each getterFromItem with <code>items</code> as the parameter.
+   * Gets a Tuple with the results of calling each getterFromItem with {{{items}}} as the parameter.
    */
   def valuesTupleFromItem(items: List[AnyRef]): ValuesTuple
 
