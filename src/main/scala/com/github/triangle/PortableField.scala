@@ -200,43 +200,25 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   private def copyFromUsingGetFunction[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F): PortableValue = {
-    if (get.isDefinedAt(from)) {
-      val value = get(from)
-      val field = this
-      new PortableValue {
-        def copyTo(to: AnyRef) {
-          if (setter.isDefinedAt(to)) {
-            copyToDefinedAt(to)
-          }
+    val value = if (get.isDefinedAt(from)) get(from) else None
+    new PortableValue {
+      def copyTo(to: AnyRef) {
+        if (setter.isDefinedAt(to)) {
+          copyToDefinedAt(to)
         }
-
-        protected[triangle] def copyToDefinedAt(to: AnyRef) {
-          debug("Copying " + value + from_to_for_field_message(from, to, field))
-          setter(to)(value)
-        }
-
-        def transform[S <: AnyRef](initial: S): S = {
-          debug("About to " + transform_with_forField_message(initial, "value " + value, self))
-          transformer(initial)(value)
-        }
-
-        override def toString = value.toString
       }
-    } else {
-      new PortableValue {
-        def copyTo(to: AnyRef) {
-          debug("Unable to copy" + from_to_for_field_message(from, to, self) + " due to getter.")
-        }
 
-        protected[triangle] def copyToDefinedAt(to: AnyRef) { new IllegalStateException("value not available") }
-
-        def transform[S <: AnyRef](initial: S): S = {
-          debug("Unable to " + transform_with_forField_message(initial, from, self) + " because of getter.")
-          initial
-        }
-
-        override def toString = "Nothing (from " + self + ")"
+      protected[triangle] def copyToDefinedAt(to: AnyRef) {
+        debug("Copying " + value + from_to_for_field_message(from, to, self))
+        setter(to)(value)
       }
+
+      def transform[S <: AnyRef](initial: S): S = {
+        debug("About to " + transform_with_forField_message(initial, "value " + value, self))
+        transformer(initial)(value)
+      }
+
+      override def toString = value.toString
     }
   }
 

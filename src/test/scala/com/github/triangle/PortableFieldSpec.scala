@@ -47,7 +47,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         stringField.copy(myEntity1, Unit)
       }
 
-      it("must happen if getter is applicable") {
+      it("must happen if getter and setter are applicable") {
         val stringField = default("Hello") + mapField("greeting")
         val map = mutable.Map[String,Any]("greeting" -> "Hola")
         stringField.getter(Unit) must be (Some("Hello"))
@@ -55,12 +55,12 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         map.get("greeting") must be (Some("Hello"))
       }
 
-      it("must not use the setter if getter isn't applicable") {
+      it("must call the setter even if the getter isn't applicable") {
         val stringField = default("Hello") + mapField("greeting")
         val map = mutable.Map[String,Any]("greeting" -> "Hola")
         stringField.getter.isDefinedAt(new Object) must be (false)
-        stringField.copy(new Object, map) //does nothing
-        map.get("greeting") must be (Some("Hola"))
+        stringField.copy(new Object, map)
+        map.get("greeting") must be (None)
       }
 
       it("must copy from one to multiple") {
@@ -128,12 +128,12 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         map.get("greeting") must be (Some("Hello"))
       }
 
-      it("must return a no-op PortableValue if getter !isDefinedAt") {
+      it("must return a None PortableValue if getter !isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
         val portableValue: PortableValue = stringField.copyFrom("string")
         portableValue must not(be(null))
 
-        val map = mutable.Map[String,Any]()
+        val map = mutable.Map[String,Any]("greeting" -> "obsolete value")
         portableValue.copyTo(map)
         map.get("greeting") must be (None)
       }
@@ -260,9 +260,10 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         result must be ("inapplicable data")
       }
 
-      it("must not transform if data is not applicable") {
+      it("must transform even if data is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(initial = immutable.Map.empty[String,String], data = "inapplicable data")
+        val result = stringField.transform(initial = immutable.Map[String,String]("greeting" -> "obsolete value"),
+          data = "inapplicable data")
         result must be (immutable.Map.empty[String,String])
       }
     }
