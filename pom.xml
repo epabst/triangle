@@ -53,6 +53,11 @@
     </pluginRepository>
   </pluginRepositories>
   <distributionManagement>
+    <site>
+      <id>scala-tools.org</id>
+      <name>${project.name} Site</name>
+      <url>http://scala-tools.org/mvnsites/${project.artifactId}-${version}</url>
+    </site>
     <repository>
       <id>scala-tools.org</id>
       <url>http://nexus.scala-tools.org/content/repositories/releases/</url>
