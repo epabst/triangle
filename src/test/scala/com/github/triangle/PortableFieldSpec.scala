@@ -291,5 +291,31 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         }
       }
     }
+
+    it("must support easily specifying a getter as a partial function") {
+      val field = getter[Int] { case subject: AnyRef => 3 }
+      field("hello") must be (3)
+    }
+
+    it("must support easily specifying a setter as a partial function") {
+      val field = setter[Int] { case subject: Buffer[Int] => _.foreach(value => subject += value) }
+      val buffer = Buffer[Int](1, 2)
+      field.setValue(buffer, Some(3))
+      buffer.toList must be (List(1, 2, 3))
+    }
+
+    it("must support easily specifying a transformer as a partial function") {
+      val field = transformer[Int] {
+        case subject: List[Int] => value => value.map(_ +: subject).getOrElse(subject)
+      }
+      field.transformWithValue(List(2, 3), Some(1)) must be (List(1, 2, 3))
+    }
+
+    describe("transformer") {
+      it("must support None as the value") {
+        val field = transformer[Int] { case subject: List[Int] => _.map(value => value +: subject).getOrElse(subject) }
+        field.transform(List(2, 3), None) must be (List(2, 3))
+      }
+    }
   }
 }

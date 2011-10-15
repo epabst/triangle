@@ -154,6 +154,12 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   /**
+   * Transforms the {{{initial}}} subject using the {{{data}}} for this field..
+   * @return the transformed subject, which could be the initial instance
+   */
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T]): S = transformer(initial)(value)
+
+  /**
    * PartialFunction for transforming an AnyRef using an optional value.
    * This delegates to {{{setter}}} for mutable objects.
    * {{{transformer(foo)(value){{{ should return a transformed version of foo (which could be the same instance if mutable).
@@ -391,6 +397,20 @@ object PortableField {
 
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
   implicit def toSome[T](value: T): Option[T] = Some(value)
+
+  def getter[T](body: PartialFunction[AnyRef,Option[T]]) = new PortableField[T] with NoTransformer[T] {
+    def getter = body
+  }
+
+  def setter[T](body: PartialFunction[AnyRef,Option[T] => Unit]) = new TransformerUsingSetter[T] with NoGetter[T] {
+    def setter = body
+  }
+
+  def transformer[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]) = new NoSetter[T] with NoGetter[T] {
+    def transformer[S <: AnyRef] = {
+      case subject if body.isDefinedAt(subject) => value => body.apply(subject)(value).asInstanceOf[S]
+    }
+  }
 
   /** Defines read-only field for a Readable type. */
   def readOnly[S,T](getter1: S => Option[T])
