@@ -141,7 +141,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * An extractor that matches the value as an Option.
    * Example: {{{case MyField(Some(string)) => ...}}}
    */
-  def unapply(subject: AnyRef): Option[Option[T]] = getter.lift(subject)
+  def unapply(subject: AnyRef): Option[Option[T]] = subject match {
+    case x if getter.isDefinedAt(x) => Some(getter(x))
+    case items: List[AnyRef] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
+    case _ => None
+  }
 
   /**
    * PartialFunction for setting an optional value in an AnyRef.
