@@ -313,6 +313,12 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   def transformer[S <: AnyRef] = delegate.transformer
 }
 
+/**
+  * a PortableField[T] that wraps another for use with creating field objects.
+  * This is important for creating extractors.
+  */
+class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T]
+
 trait SubjectField { self: PortableField[_] =>
   def subjectManifest: ClassManifest[_]
 }
@@ -374,6 +380,8 @@ trait FieldSetter[S,T] extends PortableField[T] with SubjectField with Transform
 private[triangle] trait NoTransformer[T] extends NoSetter[T] {
   def transformer[S <: AnyRef] = PortableField.emptyPartialFunction
 }
+
+case object && { def unapply[A](a: A) = Some((a, a))}
 
 trait Getter[T] extends NoTransformer[T]
 

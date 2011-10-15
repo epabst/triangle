@@ -326,4 +326,18 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
   }
+
+  describe("&&") {
+    it("must extract both values") {
+      object LengthField extends Getter[Int] {
+        def getter = { case s: String => s.length }
+      }
+      object FirstLetter extends Getter[Char] {
+        def getter = { case s: String => s.head }
+      }
+      val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
+      length must be (5)
+      c must be ('H')
+    }
+  }
 }
