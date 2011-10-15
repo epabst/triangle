@@ -311,6 +311,18 @@ trait SubjectField { self: PortableField[_] =>
   def subjectManifest: ClassManifest[_]
 }
 
+trait FieldWithSubject[S] extends SubjectField with BaseField { self: PortableField[_] =>
+  def subjectManifest: ClassManifest[S]
+
+  object Typed {
+    def unapply(subject: AnyRef): Option[S] = subject match {
+      //subjectManifest.erasure.isInstance(subject)
+      case typedSubject: S => Some(typedSubject)
+      case _ => None
+    }
+  }
+}
+
 /**
  * {@PortableField} support for getting a value as an Option if {{{subject}}} is of type S.
  * @param T the value type
@@ -353,9 +365,15 @@ trait FieldSetter[S,T] extends PortableField[T] with SubjectField with Transform
   }
 }
 
-trait NoTransformer[T] extends NoSetter[T] {
+private[triangle] trait NoTransformer[T] extends NoSetter[T] {
   def transformer[S <: AnyRef] = PortableField.emptyPartialFunction
 }
+
+trait Getter[T] extends NoTransformer[T]
+
+trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
+
+trait Transformer[T] extends NoGetter[T] with NoSetter[T]
 
 abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDelegate[T] {
   protected def delegate = field
@@ -389,7 +407,7 @@ case class FormattedField[T](format: ValueFormat[T], field: PortableField[String
  * Factory methods for basic PortableFields.  This should be imported as PortableField._.
  */
 object PortableField {
-  def emptyPartialFunction[A,B] = new PartialFunction[A,B] {
+  private[triangle] def emptyPartialFunction[A,B] = new PartialFunction[A,B] {
     def isDefinedAt(x: A) = false
 
     def apply(v1: A) = throw new MatchError("emptyPartialFunction")
@@ -398,15 +416,15 @@ object PortableField {
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
   implicit def toSome[T](value: T): Option[T] = Some(value)
 
-  def getter[T](body: PartialFunction[AnyRef,Option[T]]) = new PortableField[T] with NoTransformer[T] {
+  def getter[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
     def getter = body
   }
 
-  def setter[T](body: PartialFunction[AnyRef,Option[T] => Unit]) = new TransformerUsingSetter[T] with NoGetter[T] {
+  def setter[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
     def setter = body
   }
 
-  def transformer[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]) = new NoSetter[T] with NoGetter[T] {
+  def transformer[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
     def transformer[S <: AnyRef] = {
       case subject if body.isDefinedAt(subject) => value => body.apply(subject)(value).asInstanceOf[S]
     }
@@ -414,13 +432,12 @@ object PortableField {
 
   /** Defines read-only field for a Readable type. */
   def readOnly[S,T](getter1: S => Option[T])
-                   (implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] = {
-    new FieldGetter[S,T] with NoSetter[T] with NoTransformer[T] {
+                   (implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] =
+    new FieldGetter[S,T] with Getter[T] {
       def get(subject: S) = getter1(subject)
 
       override def toString = "readOnly[" + subjectManifest.erasure.getSimpleName + "]"
     }
-  }
 
   /** Defines a read-only field for returning the subject item itself (as an Option). */
   def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) = new DelegatingPortableField[S] {
@@ -469,7 +486,7 @@ object PortableField {
    * @param S the Subject type to transform using the value
    */
   def transformOnly[S <: AnyRef,T](theTransform: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
-    new PortableField[T] with SubjectField with NoSetter[T] with NoGetter[T] {
+    new Transformer[T] with SubjectField {
       def transformer[S1] = {
         case subject: S if subjectManifest.erasure.isInstance(subject) => value =>
           theTransform(subject)(value).asInstanceOf[S1]
@@ -495,7 +512,7 @@ object PortableField {
     })
 
   /** Defines a default for a field value, used when copied from [[scala.runtime.Unit]]. */
-  def default[T](value: => T): PortableField[T] = new PortableField[T] with NoSetter[T] with NoTransformer[T] {
+  def default[T](value: => T): PortableField[T] = new Getter[T] {
     def getter = { case Unit => Some(value) }
 
     override def toString = "default(" + value + ")"

@@ -7,7 +7,7 @@ package com.github.triangle
  * Date: 5/20/11
  * Time: 9:50 AM
  */
-trait CalculatedField[T] extends PortableField[T] with NoTransformer[T] with FieldTuple {
+trait CalculatedField[T] extends Getter[T] with FieldTuple {
   /**
    * Calculate the value.  The {{{Values}}} extractor should be used to get the other field values:
    * <pre>
