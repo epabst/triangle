@@ -438,6 +438,14 @@ object PortableField {
     def getter = body
   }
 
+  /**
+    * Like getter, but passes the list of items so that more than one of the Subjects can be used
+    * in getting the value.
+    */
+  def getterFromItem[T](body: PartialFunction[List[AnyRef],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
+    override def getterFromItem = body
+  }
+
   def setter[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
     def setter = body
   }

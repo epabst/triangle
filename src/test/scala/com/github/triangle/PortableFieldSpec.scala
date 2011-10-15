@@ -172,7 +172,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
 
-    describe("getterFromItem") {
+    describe("getterFromItem instance method") {
       it("must get from the first applicable item with Some value") {
         val fieldWithDefault = default(12) + mapField[Int]("count")
         fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any], unitAsRef)) must be (Some(12))
@@ -183,6 +183,23 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
         val fieldWithDeprecatedName = mapField[Int]("count") + mapField[Int]("size")
         fieldWithDeprecatedName.getterFromItem(List(immutable.Map[String,Any]("size" -> 4))) must be (Some(4))
+      }
+    }
+
+    describe("getterFromItem factory method") {
+      object StringIdentityField extends Field(identityField[String])
+      object Tuple2IdentityField extends Field(identityField[(Int,Int)])
+
+      val field = getterFromItem[String] {
+        case StringIdentityField(Some(string)) && Tuple2IdentityField(Some((x,y))) => string+ x + y
+      }
+
+      it("must handle accessing more than one item at once") {
+        field.getterFromItem(List(1 -> 2, "hello")) must be (Some("hello12"))
+      }
+
+      it("must gracefully handle a non-list") {
+        field.getter.isDefinedAt("hello") must be (false)
       }
     }
 
