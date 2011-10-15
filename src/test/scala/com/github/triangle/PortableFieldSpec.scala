@@ -91,6 +91,14 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
 
+    it("must extract values") {
+      object LengthField extends Getter[Int] {
+        def getter = { case s: String => s.length }
+      }
+      val LengthField(Some(length)) = "Hello"
+      length must be (5)
+    }
+
     describe("default") {
       it("must only work on Unit") {
         val stringField = default("Hello")
