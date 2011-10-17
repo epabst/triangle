@@ -142,9 +142,10 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val map = mutable.Map[String,Any]()
         portableValue.copyTo(map)
         map.get("greeting") must be (Some("Hello"))
+        portableValue.valueByField must be (Map(stringField -> "Hello"))
       }
 
-      it("must return a None PortableValue if getter !isDefinedAt") {
+      it("must return a working PortableValue if getter !isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
         val portableValue: PortableValue = stringField.copyFrom("string")
         portableValue must not(be(null))
@@ -152,10 +153,22 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val map = mutable.Map[String,Any]("greeting" -> "obsolete value")
         portableValue.copyTo(map)
         map.get("greeting") must be (None)
+        portableValue.valueByField.size must be (0)
       }
     }
 
-    describe("copyFromItem") {
+    describe("copyFromItem(from)") {
+      it("must return a working PortableValue") {
+        val stringField = mapField[String]("greeting")
+        val intField = mapField[Int]("times")
+        val map = Map[String, Any]("greeting" -> "hi", "times" -> 2)
+        val portableValue: PortableValue = FieldList(stringField, intField).copyFromItem(List(new Object, map))
+        portableValue.valueByField must be (Map(stringField -> "hi", intField -> 2))
+      }
+
+    }
+
+    describe("copyFromItem(from, to)") {
       it("must use the first applicable field variation with the first applicable item") {
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)

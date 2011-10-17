@@ -81,6 +81,12 @@ trait PortableValue {
    * @return the transformed subject, which could be the initial instance
    */
   def transform[S <: AnyRef](initial: S): S
+
+  /**
+    * Returns the value (if found) for each PortableField contained in this PortableValue.
+    * @return the values as a Map
+    */
+  def valueByField: Map[PortableField[_], Any]
 }
 
 /**
@@ -233,6 +239,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
         debug("About to " + transform_with_forField_message(initial, "value " + value, self))
         transformer(initial)(value)
       }
+
+      def valueByField = value.map(v => Map[PortableField[_],Any](self -> v)).getOrElse(Map.empty)
 
       override def toString = value.toString
     }
