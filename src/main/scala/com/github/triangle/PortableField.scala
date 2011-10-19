@@ -577,12 +577,14 @@ object PortableField {
     override def toString = "field[" + subjectManifest.erasure.getSimpleName + "]"
   }
 
-  def mapField[T](name: String): PortableField[T] = new DelegatingPortableField[T] {
-    val delegate = readOnly[Map[String,_ <: T],T](_.get(name)) + writeOnlyDirect[mutable.Map[String,_ >: T],T](m => v => m.put(name, v), _.remove(name)) +
-            transformOnlyDirect[immutable.Map[String,_ >: T],T](map => value => map + (name -> value), _ - name)
+  def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
+    val delegate = readOnly[Map[K,_ <: T],T](_.get(key)) + writeOnlyDirect[mutable.Map[K,_ >: T],T](m => v => m.put(key, v), _.remove(key)) +
+            transformOnlyDirect[immutable.Map[K,_ >: T],T](map => value => map + (key -> value), _ - key)
 
-    override def toString = "mapField(" + name + ")"
+    override def toString = "mapField(" + key + ")"
   }
+
+  def mapField[T](name: String): PortableField[T] = mapFieldWithKey[T,String](name)
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
   def adjustment[S](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
