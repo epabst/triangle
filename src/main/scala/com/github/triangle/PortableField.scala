@@ -433,6 +433,8 @@ case class FormattedField[T](format: ValueFormat[T], field: PortableField[String
  * Factory methods for basic PortableFields.  This should be imported as PortableField._.
  */
 object PortableField {
+  def emptyField[T]: PortableField[T] = new NoGetter[T] with NoTransformer[T]
+
   private[triangle] def emptyPartialFunction[A,B] = new PartialFunction[A,B] {
     def isDefinedAt(x: A) = false
 
