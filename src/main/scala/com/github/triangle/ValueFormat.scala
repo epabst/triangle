@@ -54,6 +54,8 @@ object ValueFormat {
   lazy val currencyValueFormat = convertingFormat(stringToCurrency, currencyToEditString)
   lazy val currencyDisplayValueFormat = convertingFormat(stringToCurrency, currencyToString)
   lazy val dateValueFormat = convertingFormat(stringToDate, dateToString)
+  lazy val dateDisplayValueFormat = convertingFormat(stringToDate, dateToDisplayString)
   lazy val calendarValueFormat = toCalendarFormat(dateValueFormat)
+  lazy val calendarDisplayValueFormat = toCalendarFormat(dateDisplayValueFormat)
   lazy val persistedDateFormat = textValueFormat[Date](new SimpleDateFormat("yyyy-MM-dd"))
 }

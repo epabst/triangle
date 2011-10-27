@@ -74,10 +74,22 @@ class ConverterSpec extends Spec with MustMatchers {
       dateToString.convert(new Date()).isDefined must be (true)
     }
 
+    it("must use the 'short' format for the current Locale") {
+      val date = new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime
+      val expectedString = DateFormat.getDateInstance(DateFormat.SHORT).format(date)
+      dateToString.convert(date).get must be(expectedString)
+    }
+  }
+
+  describe("dateToDisplayString") {
+    it("must format a date") {
+      dateToDisplayString.convert(new Date()).isDefined must be (true)
+    }
+
     it("must use the default format for the current Locale") {
       val date = new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime
       val expectedString = DateFormat.getDateInstance.format(date)
-      dateToString.convert(date).get must be(expectedString)
+      dateToDisplayString.convert(date).get must be(expectedString)
     }
   }
 

@@ -106,9 +106,13 @@ object Converter {
   lazy val currencyToString: Converter[Double,String] = formatToString[Double](currencyFormat)
   lazy val currencyToEditString: Converter[Double,String] = formatToString[Double](currencyEditFormat)
 
-  private lazy val dateFormats = List(DateFormat.getDateInstance, new java.text.SimpleDateFormat("MM/dd/yyyy"), new java.text.SimpleDateFormat("dd MMM yyyy"))
+  private lazy val dateFormats = List(DateFormat.SHORT, DateFormat.DEFAULT, DateFormat.MEDIUM).map(DateFormat.getDateInstance(_)) ++
+          List("MM/dd/yyyy", "dd MMM yyyy").map(new java.text.SimpleDateFormat(_))
   lazy val stringToDate = new CompositeDirectConverter[String,Date](dateFormats.map(new ParseFormatConverter[Date](_)))
-  lazy val dateToString = formatToString[Date](DateFormat.getDateInstance)
+  //SHORT is probably the best style for input
+  lazy val dateToString = formatToString[Date](DateFormat.getDateInstance(DateFormat.SHORT))
+  //DEFAULT is probably the best style for output
+  lazy val dateToDisplayString = formatToString[Date](DateFormat.getDateInstance(DateFormat.DEFAULT))
 
   def stringToEnum[T <: Enumeration#Value](enumeration: Enumeration): Converter[String,T] = new Converter[String,T] {
     def convert(from: String) = enumeration.values.find(_.toString == from).map(_.asInstanceOf[T])

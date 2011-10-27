@@ -65,7 +65,11 @@ class ValueFormatSpec extends Spec with MustMatchers {
       format.toValue("-$1") must be(None)
     }
 
-    it("must format correctly") {
+    it("must format correctly (for editting)") {
+      format.toString(1) must be("1.00")
+      format.toString(1.2) must be("1.20")
+      format.toString(1.23) must be("1.23")
+      format.toString(1.233) must be("1.23")
       format.toString(1234.2) must be ("1,234.20")
       format.toString(1234.22324) must be ("1,234.22")
     }
