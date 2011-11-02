@@ -37,6 +37,8 @@
   </scm>
   <properties>
     <scala.version>2.8.1</scala.version>
+    <!-- skip site:deploy because scala-tools hasn't set me up for this yet. -->
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
   <repositories>
     <repository>
