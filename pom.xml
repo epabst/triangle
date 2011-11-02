@@ -16,7 +16,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.epabst.triangle</groupId>
   <artifactId>triangle</artifactId>
-  <version>0.4</version>
+  <version>0.5-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Triangle Mapping Framework</name>
   <url>https://github.com/epabst/triangle</url>
