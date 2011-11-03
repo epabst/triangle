@@ -173,7 +173,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * Transforms the {{{initial}}} subject using the {{{data}}} for this field..
    * @return the transformed subject, which could be the initial instance
    */
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T]): S = transformer(initial)(value)
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T]): S = transformer[S](initial)(value)
 
   /**
    * PartialFunction for transforming an AnyRef using an optional value.
@@ -183,7 +183,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
 
-  private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](get: PartialFunction[F,Option[T]], initial: S, data: F) = {
+  private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](get: PartialFunction[F,Option[T]], initial: S, data: F): S = {
     if (transformer.isDefinedAt(initial)) {
       copyFromUsingGetFunction(get, data).transform(initial)
     } else {
@@ -193,11 +193,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   //inherited
-  def transform[S <: AnyRef](initial: S, data: AnyRef) =
+  def transform[S <: AnyRef](initial: S, data: AnyRef): S =
     transformUsingGetFunctionCheckingTransformerFirst[S,AnyRef](getter, initial, data)
 
   //inherited
-  def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]) =
+  def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S =
     transformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]](getterFromItem, initial, dataItems)
 
   def copyFrom(from: AnyRef) = copyFromUsingGetFunction(getter, from)
@@ -237,7 +237,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
       def transform[S <: AnyRef](initial: S): S = {
         debug("About to " + transform_with_forField_message(initial, "value " + value, self))
-        transformer(initial)(value)
+        transformer[S](initial)(value)
       }
 
       def valueByField = value.map(v => Map[PortableField[_],Any](self -> v)).getOrElse(Map.empty)
@@ -413,7 +413,7 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
   def setter = field.setter.andThen(setter => setter.compose(value => value.flatMap(unconvert(_))))
 
   def transformer[S <: AnyRef] = {
-    case subject if field.transformer[S].isDefinedAt(subject) => { value =>
+    case subject: S if field.transformer[S].isDefinedAt(subject) => { value =>
       field.transformer(subject)(value.flatMap(unconvert(_)))
     }
   }
@@ -462,7 +462,7 @@ object PortableField {
 
   def transformer[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
     def transformer[S <: AnyRef] = {
-      case subject if body.isDefinedAt(subject) => value => body.apply(subject)(value).asInstanceOf[S]
+      case subject: S if body.isDefinedAt(subject) => value => body.apply(subject)(value).asInstanceOf[S]
     }
   }
 
@@ -589,8 +589,12 @@ object PortableField {
   def mapField[T](name: String): PortableField[T] = mapFieldWithKey[T,String](name)
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
-  def adjustment[S](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
+  def adjustmentInPlace[S](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
     default[Unit](Unit) + writeOnly[S,Unit](s => u => adjuster(s))
+
+  /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
+  def adjustment[S <: AnyRef](adjuster: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
+    default[Unit](Unit) + transformOnly[S,Unit](s => u => adjuster(s))
 
   def converted[A,B](converter1: Converter[A,B], converter2: Converter[B,A], field: PortableField[B]): PortableField[A] =
     new ConvertedField[A,B](field) {
