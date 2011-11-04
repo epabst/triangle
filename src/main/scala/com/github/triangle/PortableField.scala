@@ -331,7 +331,9 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   * a PortableField[T] that wraps another for use with creating field objects.
   * This is important for creating extractors.
   */
-class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T]
+class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T] {
+  override def toString = delegate.toString
+}
 
 trait SubjectField { self: PortableField[_] =>
   def subjectManifest: ClassManifest[_]
