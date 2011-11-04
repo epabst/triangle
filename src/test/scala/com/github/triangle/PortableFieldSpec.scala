@@ -370,6 +370,14 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         field.transform(List(2, 3), None) must be (List(2, 3))
       }
     }
+
+    describe("truncate") {
+      it("must remove package names from the result") {
+        val field = default(2)
+        object Foo
+        field.truncate(Foo) must(not(include(Foo.getClass.getPackage.getName.take(8))))
+      }
+    }
   }
 
   describe("&&") {

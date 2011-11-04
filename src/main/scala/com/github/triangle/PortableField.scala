@@ -59,8 +59,10 @@ trait BaseField {
   protected def transform_with_forField_message(initial: AnyRef, data: Any, field: BaseField): String =
     "transform " + truncate(initial) + " with " + truncate(data) + " for field " + truncate(field)
 
-  private def truncate(any: Any): String = {
-    val string = String.valueOf(any)
+  private[triangle] def truncate(any: Any): String = {
+    val stripStrings = Option(any).collect { case ref: AnyRef => ref.getClass.getPackage.getName + "." }
+    val rawString = String.valueOf(any)
+    val string = stripStrings.foldLeft(rawString)((soFar, strip) => soFar.replace(strip, ""))
     string.substring(0, math.min(string.length, 25))
   }
 }
