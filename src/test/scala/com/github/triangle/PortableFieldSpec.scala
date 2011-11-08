@@ -268,6 +268,12 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
 
+    describe("transformOnlyDirect") {
+      it("must provide a default for the clearer") {
+        transformOnlyDirect[String,String](string => v => string + v)
+      }
+    }
+
     describe("transformer") {
       it("must delegate to setter for mutable objects") {
         val stringField = mapField[String]("greeting")

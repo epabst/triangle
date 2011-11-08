@@ -543,7 +543,7 @@ object PortableField {
    * The clearer is used when the value is None.
    * @param S the Subject type to transform using the value
    */
-  def transformOnlyDirect[S <: AnyRef,T](theTransform: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
+  def transformOnlyDirect[S <: AnyRef,T](theTransform: S => T => S, clearer: S => S = {s: S => s})(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
     transformOnly[S,T](subject => { valueOpt =>
       valueOpt match {
         case Some(value) => theTransform(subject)(value).asInstanceOf[S]

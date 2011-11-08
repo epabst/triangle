@@ -107,7 +107,7 @@ object Converter {
   lazy val currencyToEditString: Converter[Double,String] = formatToString[Double](currencyEditFormat)
 
   private lazy val dateFormats = List(DateFormat.SHORT, DateFormat.DEFAULT, DateFormat.MEDIUM).map(DateFormat.getDateInstance(_)) ++
-          List("MM/dd/yyyy", "dd MMM yyyy").map(new java.text.SimpleDateFormat(_))
+          List("MM/dd/yyyy", "yyyy-MM-dd", "dd MMM yyyy").map(new java.text.SimpleDateFormat(_))
   lazy val stringToDate = new CompositeDirectConverter[String,Date](dateFormats.map(new ParseFormatConverter[Date](_)))
   //SHORT is probably the best style for input
   lazy val dateToString = formatToString[Date](DateFormat.getDateInstance(DateFormat.SHORT))
