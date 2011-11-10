@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
  */
 
 trait Logging {
-  protected lazy val logTag: String = this.getClass.getName
+  protected def logTag: String
   lazy val logger = LoggerFactory.getLogger(logTag)
 
   protected def trace(f: => String) {

@@ -4,6 +4,9 @@ import collection._
 
 /** A trait for [[com.github.triangle.PortableField]] for convenience such as when defining a List of heterogeneous Fields. */
 trait BaseField {
+  // For use with when the Logging trait is mixed-in
+  protected def logTag = "triangle"
+
   /**
    * Copies this field, the same as {{{copy(AnyRef,AnyRef)}}} except that
    * the copying from {{{from}}} happens immediately (on the current thread),
