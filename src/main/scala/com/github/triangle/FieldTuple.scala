@@ -21,19 +21,6 @@ trait FieldTuple extends Product {
    */
   def valuesTupleFromItem(items: List[AnyRef]): ValuesTuple
 
-  /**
-   * An extractor for the values of the fields used in the calculation of the calculated field value.
-   * It handles both List[AnyRef] and AnyRef itself.
-   */
-  object Values {
-    def unapply(readable: AnyRef): Option[ValuesTuple] = readable match {
-      case x if productIterator.forall(_.asInstanceOf[PortableField[_]].getter.isDefinedAt(x)) => Some(valuesTuple(x))
-      case x: List[AnyRef] if productIterator.forall(_.asInstanceOf[PortableField[_]].getterFromItem.isDefinedAt(x)) =>
-        Some(valuesTupleFromItem(x))
-      case _ => None
-    }
-  }
-
   def canEqual(that: Any) = that match {
     case x: AnyRef => this.getClass == x.getClass
     case _ => false
