@@ -5,7 +5,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 import PortableField._
-
+import scala.collection.mutable
 
 /**
  * A behavior specification for [[com.github.triangle.FieldTuple]].
@@ -16,9 +16,9 @@ import PortableField._
 
 @RunWith(classOf[JUnitRunner])
 class FieldTupleSpec extends Spec with MustMatchers {
-  val intField = default[Int](10)
-  val stringField = default[String]("Hello")
-  val doubleField = default[Double](11.0)
+  val intField = default[Int](10) + mapField("int")
+  val stringField = default[String]("Hello") + mapField("string")
+  val doubleField = default[Double](11.0) + mapField("double")
 
   describe("valuesTuple") {
     it("must extract the field values") {
@@ -44,13 +44,6 @@ class FieldTupleSpec extends Spec with MustMatchers {
       integer must be (Some(10))
       string must be (Some("Hello"))
       double must be (Some(11.0))
-    }
-
-    it("must work for tuple size of 1") {
-      val tuple = FieldTuple1(stringField)
-      tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
-        case (Some("Hello")) => "ok"; case _ => fail()
-      }
     }
 
     it("must work for tuple size of 2") {
@@ -93,6 +86,23 @@ class FieldTupleSpec extends Spec with MustMatchers {
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10), Some(11.0), Some(10)) => "ok"; case _ => fail()
       }
+    }
+  }
+
+  describe("setter") {
+    case class IntStringDouble(int: Int, string: String, double: Double)
+    val setter = FieldTuple3(intField, stringField, doubleField).setter[IntStringDouble](v => (v.int, v.string, v.double))
+
+    it("should use each inner field's setter") {
+      val map = mutable.Map.empty[String,Any]
+      setter.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
+      map.toMap must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
+    }
+
+    it("should use each inner field's setter when no value is provided") {
+      val map = mutable.Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1)
+      setter.setValue(map, None)
+      map.toMap must be (Map.empty[String,Any])
     }
   }
 }
