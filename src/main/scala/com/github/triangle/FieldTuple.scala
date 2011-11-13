@@ -25,12 +25,19 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
 
   /** Creates a Setter PortableField that accepts a composite type T and a splitter function. */
   def setter[T](splitter: T => ValuesTuple): Setter[T] = {
-    PortableField.setter {
-      case ref if productIterator.forall(_.setter.isDefinedAt(ref)) => {
-        case Some(compositeValue) =>
-          setValues(ref, splitter(compositeValue))
-        case None =>
-          productIterator.foreach(_.setValue(ref, None))
+    new Setter[T] {
+      def setter = {
+        case ref if productIterator.forall(_.setter.isDefinedAt(ref)) => {
+          case Some(compositeValue) =>
+            setValues(ref, splitter(compositeValue))
+          case None =>
+            productIterator.foreach(_.setValue(ref, None))
+        }
+      }
+
+      override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
+        val lifted = f.lift
+        productIterator.toList.flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
       }
     }
   }

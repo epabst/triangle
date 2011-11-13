@@ -104,5 +104,12 @@ class FieldTupleSpec extends Spec with MustMatchers {
       setter.setValue(map, None)
       map.toMap must be (Map.empty[String,Any])
     }
+
+    it("should support deepCollect") {
+      setter.deepCollect {
+        case f if f == intField => f
+        case f if f == doubleField => f
+      } must be (List(intField, doubleField))
+    }
   }
 }
