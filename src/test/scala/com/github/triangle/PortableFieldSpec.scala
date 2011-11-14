@@ -130,12 +130,38 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     }
 
     describe("mapField") {
-      it("must clear") {
+      it("must remove a value from a mutable.Map") {
         val stringField = mapField[String]("greeting")
         val map = mutable.Map("greeting" -> "Hola")
         stringField.getter(mutable.Map[String,Any]()) must be (None)
         stringField.copy(mutable.Map[String,Any](), map)
         map.contains("greeting") must be (false)
+      }
+
+      it("must unwrap a Some when putting it into a mutable.Map") {
+        val stringField = mapField[String]("greeting")
+        val map = mutable.Map.empty[String,String]
+        stringField.setValue(map, Some("Hello"))
+        map.toMap must be (Map("greeting" -> "Hello"))
+      }
+
+      it("must not add to a mutable.Map if value is None") {
+        val stringField = mapField[String]("greeting")
+        val map = mutable.Map.empty[String,String]
+        stringField.setValue(map, None)
+        map.toMap must be (Map.empty[String,String])
+      }
+
+      it("must unwrap a Some when putting it into an immutable.Map") {
+        val stringField = mapField[String]("greeting")
+        val result = stringField.transformer[Map[String, String]](Map.empty)(Some("Hello"))
+        result must be (Map("greeting" -> "Hello"))
+      }
+
+      it("must not add to an immutable.Map if value is None") {
+        val stringField = mapField[String]("greeting")
+        val result = stringField.transform(Map.empty[String,String], None)
+        result must be (Map.empty[String,String])
       }
     }
 
