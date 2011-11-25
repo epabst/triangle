@@ -342,8 +342,16 @@ trait SubjectField { self: PortableField[_] =>
   def subjectManifest: ClassManifest[_]
 }
 
-trait FieldWithSubject[S] extends SubjectField with BaseField { self: PortableField[_] =>
+trait FieldWithSubject[S <: AnyRef,T] extends PortableField[T] with SubjectField { self =>
   def subjectManifest: ClassManifest[S]
+
+  def withSetter(body: S => Option[T] => Unit): FieldWithSubject[S,T] = new Field[T](this + PortableField.writeOnly(body)(subjectManifest)) with FieldWithSubject[S,T] {
+    def subjectManifest = self.subjectManifest
+  }
+
+  def withTransformer(body: S => Option[T] => S): FieldWithSubject[S,T] = new Field[T](this + PortableField.transformOnly(body)(subjectManifest)) with FieldWithSubject[S,T] {
+    def subjectManifest = self.subjectManifest
+  }
 
   object Typed {
     def unapply(subject: AnyRef): Option[S] = subject match {
@@ -359,7 +367,7 @@ trait FieldWithSubject[S] extends SubjectField with BaseField { self: PortableFi
  * @param T the value type
  * @param S the Readable type to get the value out of
  */
-abstract class FieldGetter[S,T](implicit val subjectManifest: ClassManifest[S]) extends PortableField[T] with SubjectField with Logging {
+abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
@@ -385,7 +393,7 @@ trait TransformerUsingSetter[T] extends PortableField[T] {
  * This is a trait so that it can be mixed with FieldGetter.
  * @param S the Writable type to put the value into
  */
-trait FieldSetter[S,T] extends PortableField[T] with SubjectField with TransformerUsingSetter[T] with Logging {
+trait FieldSetter[S <: AnyRef,T] extends FieldWithSubject[S,T] with TransformerUsingSetter[T] with Logging {
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
@@ -474,7 +482,7 @@ object PortableField {
   }
 
   /** Defines read-only field for a Readable type. */
-  def readOnly[S,T](getter1: S => Option[T])
+  def readOnly[S <: AnyRef,T](getter1: S => Option[T])
                    (implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] =
     new FieldGetter[S,T] with Getter[T] {
       def get(subject: S) = getter1(subject)
@@ -490,8 +498,8 @@ object PortableField {
   }
 
   /** Defines write-only field for a Writable type with Option as the type. */
-  def writeOnly[S,T](setter1: S => Option[T] => Unit)
-                    (implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
+  def writeOnly[S <: AnyRef,T](setter1: S => Option[T] => Unit)
+                              (implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
     new FieldSetter[S,T] {
       def subjectManifest = _subjectManifest
 
@@ -520,7 +528,7 @@ object PortableField {
    * The setter operates on a value directly, rather than on an Option.
    * The clearer is used when the value is None.
    */
-  def writeOnlyDirect[S,T](setter1: S => T => Unit, clearer: S => Unit = {_: S => })
+  def writeOnlyDirect[S <: AnyRef,T](setter1: S => T => Unit, clearer: S => Unit = {_: S => })
                           (implicit subjectManifest: ClassManifest[S]): FieldSetter[S,T] =
     writeOnly[S,T](fromDirect(setter1, clearer))
 
@@ -568,7 +576,7 @@ object PortableField {
    * @param S the Subject being accessed
    * @param T the value type
    */
-  def fieldDirect[S,T](getter: S => Option[T], setter: S => T => Unit, clearer: S => Unit = {_: S => })
+  def fieldDirect[S <: AnyRef,T](getter: S => Option[T], setter: S => T => Unit, clearer: S => Unit = {_: S => })
                       (implicit subjectManifest: ClassManifest[S]): PortableField[T] =
     field[S,T](getter, fromDirect(setter, clearer))
 
@@ -577,7 +585,7 @@ object PortableField {
    * @param S the subject being accessed
    * @param T the value type
    */
-  def field[S,T](getter1: S => Option[T], setter1: S => Option[T] => Unit)
+  def field[S <: AnyRef,T](getter1: S => Option[T], setter1: S => Option[T] => Unit)
                 (implicit _subjectManifest: ClassManifest[S]): PortableField[T] = new DelegatingPortableField[T] with SubjectField {
     val delegate = readOnly[S,T](getter1) + writeOnly[S,T](setter1)
 
@@ -596,7 +604,7 @@ object PortableField {
   def mapField[T](name: String): PortableField[T] = mapFieldWithKey[T,String](name)
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
-  def adjustmentInPlace[S](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
+  def adjustmentInPlace[S <: AnyRef](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
     default[Unit](Unit) + writeOnly[S,Unit](s => u => adjuster(s))
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */

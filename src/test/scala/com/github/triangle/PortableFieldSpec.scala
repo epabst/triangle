@@ -30,7 +30,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     class OtherEntity(var name: String, var myBoolean: Boolean)
 
     it("must be easily instantiable for an Entity") {
-      fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
+      readOnly[MyEntity,String](e => e.myString).withSetter(e => _.foreach(e.myString = _))
       fieldDirect[MyEntity,Int](e => e.number, e => e.number = _)
       fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _) +
         readOnly[OtherEntity,String](e => e.name) +
