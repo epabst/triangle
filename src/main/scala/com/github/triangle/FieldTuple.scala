@@ -23,9 +23,25 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   //this is only here to help the IDE to infer the type concretely
   override def productIterator: Iterator[PortableField[_]] = super.productIterator
 
+  private trait InnerTupleField extends BaseField {
+    override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
+      val lifted = f.lift
+      productIterator.toList.flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
+    }
+  }
+
+  /** Creates a Getter PortableField that accepts a composite type T and a combiner function. */
+  def getter[T](combiner: ValuesTuple => Option[T]): Getter[T] = {
+    new Getter[T] with InnerTupleField {
+      def getter = {
+        case ref if productIterator.forall(_.getter.isDefinedAt(ref)) => combiner(valuesTuple(ref))
+      }
+    }
+  }
+
   /** Creates a Setter PortableField that accepts a composite type T and a splitter function. */
   def setter[T](splitter: T => ValuesTuple): Setter[T] = {
-    new Setter[T] {
+    new Setter[T] with InnerTupleField {
       def setter = {
         case ref if productIterator.forall(_.setter.isDefinedAt(ref)) => {
           case Some(compositeValue) =>
@@ -33,11 +49,6 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
           case None =>
             productIterator.foreach(_.setValue(ref, None))
         }
-      }
-
-      override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
-        val lifted = f.lift
-        productIterator.toList.flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
       }
     }
   }
@@ -50,6 +61,23 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
 
 /** The implicit toTupleXOfSomes defs are useful when defining a setter for a FieldTuple. */
 object FieldTuple {
+  def apply[F1,F2](_1: PortableField[F1], _2: PortableField[F2]) =
+    FieldTuple2(_1, _2)
+  def apply[F1,F2,F3](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3]) =
+    FieldTuple3(_1, _2, _3)
+  def apply[F1,F2,F3,F4](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3], _4: PortableField[F4]) =
+    FieldTuple4(_1, _2, _3, _4)
+  def apply[F1,F2,F3,F4,F5](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3], _4: PortableField[F4],
+                            _5: PortableField[F5]) =
+    FieldTuple5(_1, _2, _3, _4, _5)
+  def apply[F1,F2,F3,F4,F5,F6](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3],
+                               _4: PortableField[F4], _5: PortableField[F5], _6: PortableField[F6]) =
+    FieldTuple6(_1, _2, _3, _4, _5, _6)
+  def apply[F1,F2,F3,F4,F5,F6,F7](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3],
+                                  _4: PortableField[F4], _5: PortableField[F5], _6: PortableField[F6],
+                                  _7: PortableField[F7]) =
+    FieldTuple7(_1, _2, _3, _4, _5, _6, _7)
+
   implicit def toTuple2OfSomes[F1,F2](tuple: (F1, F2)): (Option[F1], Option[F2]) =
     (Some(tuple._1), Some(tuple._2))
 

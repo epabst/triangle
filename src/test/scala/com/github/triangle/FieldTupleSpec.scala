@@ -22,7 +22,7 @@ class FieldTupleSpec extends Spec with MustMatchers {
 
   describe("valuesTuple") {
     it("must extract the field values") {
-      val fieldTuple = FieldTuple3(intField, stringField, doubleField)
+      val fieldTuple = FieldTuple(intField, stringField, doubleField)
       //use it to match a single AnyRef
       fieldTuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (myInt, myString, myDouble) => {
@@ -47,51 +47,71 @@ class FieldTupleSpec extends Spec with MustMatchers {
     }
 
     it("must work for tuple size of 2") {
-      val tuple = FieldTuple2(intField, stringField)
+      val tuple = FieldTuple(intField, stringField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello")) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 3") {
-      val tuple = FieldTuple3(intField, stringField, doubleField)
+      val tuple = FieldTuple(intField, stringField, doubleField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 4") {
-      val tuple = FieldTuple4(intField, stringField, doubleField, stringField)
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello")) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 5") {
-      val tuple = FieldTuple5(intField, stringField, doubleField, stringField, intField)
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 6") {
-      val tuple = FieldTuple6(intField, stringField, doubleField, stringField, intField, doubleField)
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10), Some(11.0)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 7") {
-      val tuple = FieldTuple7(intField, stringField, doubleField, stringField, intField, doubleField, intField)
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField, intField)
       tuple.valuesTuple(Unit.asInstanceOf[AnyRef]) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10), Some(11.0), Some(10)) => "ok"; case _ => fail()
       }
     }
   }
 
+  describe("getter") {
+    case class IntStringDouble(int: Int, string: String, double: Double)
+    val getter = FieldTuple(intField, stringField, doubleField).getter[IntStringDouble] {
+      case (Some(int), Some(string), Some(double)) => Some(IntStringDouble(int, string, double))
+      case _ => None
+    }
+
+    it("should use each inner field's getter") {
+      val map = Map("int" -> 5, "string" -> "Joe", "double" -> 0.1)
+      getter.getter(map) must be (Some(IntStringDouble(5, "Joe", 0.1)))
+    }
+
+    it("should support deepCollect") {
+      getter.deepCollect {
+        case f if f == intField => f
+        case f if f == doubleField => f
+      } must be (List(intField, doubleField))
+    }
+  }
+
   describe("setter") {
     case class IntStringDouble(int: Int, string: String, double: Double)
-    val setter = FieldTuple3(intField, stringField, doubleField).setter[IntStringDouble](v => (v.int, v.string, v.double))
+    val setter = FieldTuple(intField, stringField, doubleField).setter[IntStringDouble](v => (v.int, v.string, v.double))
 
     it("should use each inner field's setter") {
       val map = mutable.Map.empty[String,Any]
