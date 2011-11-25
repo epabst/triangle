@@ -89,6 +89,44 @@ class FieldTupleSpec extends Spec with MustMatchers {
     }
   }
 
+  describe("transformWithValues") {
+    it("must work for tuple size of 2") {
+      val tuple = FieldTuple(intField, stringField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"))) must
+        be (Map("int" -> 2, "string" -> "hi"))
+    }
+
+    it("must work for tuple size of 3") {
+      val tuple = FieldTuple(intField, stringField, doubleField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14))) must
+        be (Map("int" -> 2, "string" -> "hi", "double" -> 3.14))
+    }
+
+    it("must work for tuple size of 4") {
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"))) must
+        be (Map("int" -> 2, "string" -> "hi2", "double" -> 3.14))
+    }
+
+    it("must work for tuple size of 5") {
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3))) must
+        be (Map("int" -> 3, "string" -> "hi2", "double" -> 3.14))
+    }
+
+    it("must work for tuple size of 6") {
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77))) must
+        be (Map("int" -> 3, "string" -> "hi2", "double" -> 1.77))
+    }
+
+    it("must work for tuple size of 7") {
+      val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField, intField)
+      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77), Some(11))) must
+        be (Map("int" -> 11, "string" -> "hi2", "double" -> 1.77))
+    }
+  }
+
   describe("getter") {
     case class IntStringDouble(int: Int, string: String, double: Double)
     val getter = FieldTuple(intField, stringField, doubleField).getter[IntStringDouble] {
@@ -109,24 +147,34 @@ class FieldTupleSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("setter") {
+  describe("transformer") {
     case class IntStringDouble(int: Int, string: String, double: Double)
-    val setter = FieldTuple(intField, stringField, doubleField).setter[IntStringDouble](v => (v.int, v.string, v.double))
+    val transformer = FieldTuple(intField, stringField, doubleField).transformer[IntStringDouble](v => (v.int, v.string, v.double))
+
+    it("should use each inner field's transformer") {
+      val map = transformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+      map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
+    }
+
+    it("should use each inner field's transformer when no value is provided") {
+      val map = transformer.transformWithValue(Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1), None)
+      map.toMap must be (Map.empty[String,Any])
+    }
 
     it("should use each inner field's setter") {
       val map = mutable.Map.empty[String,Any]
-      setter.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
+      transformer.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
       map.toMap must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
     }
 
     it("should use each inner field's setter when no value is provided") {
       val map = mutable.Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1)
-      setter.setValue(map, None)
+      transformer.setValue(map, None)
       map.toMap must be (Map.empty[String,Any])
     }
 
     it("should support deepCollect") {
-      setter.deepCollect {
+      transformer.deepCollect {
         case f if f == intField => f
         case f if f == doubleField => f
       } must be (List(intField, doubleField))

@@ -462,7 +462,7 @@ object Setter {
 
   /**
    * Defines a setter field for a Writable type, with separate functions for Some and None.
-   * The setter operates on a value directly, rather than on an Option.
+   * The body operates on a value directly, rather than on an Option.
    * The clearer is used when the value is None.
    * @param clearer a function or 'noSetterForEmpty'
    */
