@@ -59,7 +59,7 @@ object Converter {
   }
 
   val stringToAnyVal: GenericConverter[String,AnyVal] = new SimpleGenericConverter[String,AnyVal] {
-    def attemptConvertTo[T <: AnyVal](from: String)(implicit manifest: Manifest[T]) = {
+    def attemptConvertTo[T <: AnyVal](from: String)(implicit manifest: Manifest[T]): T = {
       manifest.erasure match {
         case x: Class[_] if (x == classOf[Int]) => from.toInt.asInstanceOf[T]
         case x: Class[_] if (x == classOf[Long]) => from.toLong.asInstanceOf[T]
@@ -87,21 +87,21 @@ object Converter {
       new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
   )
 
-  def converter[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
+  def apply[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
     def convert(from: A) = f(from)
   }
 
-  lazy val dateToLong = converter[Date, Long](d => Some(d.getTime))
-  lazy val longToDate = converter[Long, Date](l => Some(new Date(l)))
+  lazy val dateToLong = Converter[Date, Long](d => Some(d.getTime))
+  lazy val longToDate = Converter[Long, Date](l => Some(new Date(l)))
 
-  lazy val dateToCalendar = converter[Date, Calendar] { date =>
+  lazy val dateToCalendar = Converter[Date, Calendar] { date =>
     val calendar = Calendar.getInstance
     calendar.setTime(date)
     Some(calendar)
   }
-  lazy val calendarToDate = converter[Calendar, Date](c => Some(c.getTime))
+  lazy val calendarToDate = Converter[Calendar, Date](c => Some(c.getTime))
 
-  def formatToString[T](format: Format): Converter[T,String] = converter[T,String](value => Some(format.format(value)))
+  def formatToString[T](format: Format): Converter[T,String] = Converter[T,String](value => Some(format.format(value)))
 
   lazy val currencyToString: Converter[Double,String] = formatToString[Double](currencyFormat)
   lazy val currencyToEditString: Converter[Double,String] = formatToString[Double](currencyEditFormat)
