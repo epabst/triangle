@@ -184,6 +184,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * PartialFunction for transforming an AnyRef using an optional value.
    * This delegates to {{{setter}}} for mutable objects.
    * {{{transformer(foo)(value){{{ should return a transformed version of foo (which could be the same instance if mutable).
+   * Note: Implementations usually must specify the return type to compile properly
    * @param a subject to be transformed, whether immutable or mutable
    */
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
@@ -295,11 +296,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
         }
       }
 
-      override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
-        super.deepCollect(f) match {
+      override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
+        super.deepCollect[R](f) match {
           case Nil =>
             val lifted = f.lift
-            List(self, other).flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
+            List(self, other).flatMap(field => lifted(field).map(List[R](_)).getOrElse(field.deepCollect(f)))
           case x => x
         }
       }
@@ -327,7 +328,7 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 
   def setter = delegate.setter
 
-  def transformer[S <: AnyRef] = delegate.transformer
+  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = delegate.transformer
 }
 
 /**
@@ -345,13 +346,24 @@ trait SubjectField { self: PortableField[_] =>
 trait FieldWithSubject[S <: AnyRef,T] extends PortableField[T] with SubjectField { self =>
   def subjectManifest: ClassManifest[S]
 
-  def withSetter(body: S => Option[T] => Unit): FieldWithSubject[S,T] = new Field[T](this + PortableField.writeOnly(body)(subjectManifest)) with FieldWithSubject[S,T] {
+  def withSetter(body: S => Option[T] => Unit): FieldWithSubject[S,T] =
+    new Field[T](this + Setter(body)(subjectManifest)) with FieldWithSubject[S,T] {
+      def subjectManifest = self.subjectManifest
+    }
+
+  def withSetter(body: S => T => Unit, clearer: S => Unit): FieldWithSubject[S,T] =
+    new Field[T](this + Setter(body, clearer)(subjectManifest)) with FieldWithSubject[S,T] {
+      def subjectManifest = self.subjectManifest
+    }
+
+  def withTransformer(body: S => Option[T] => S): FieldWithSubject[S,T] = new Field[T](this + Transformer(body)(subjectManifest)) with FieldWithSubject[S,T] {
     def subjectManifest = self.subjectManifest
   }
 
-  def withTransformer(body: S => Option[T] => S): FieldWithSubject[S,T] = new Field[T](this + PortableField.transformOnly(body)(subjectManifest)) with FieldWithSubject[S,T] {
-    def subjectManifest = self.subjectManifest
-  }
+  def withTransformer(body: S => T => S, clearer: S => S): FieldWithSubject[S,T] =
+    new Field[T](this + Transformer(body, clearer)(subjectManifest)) with FieldWithSubject[S,T] {
+      def subjectManifest = self.subjectManifest
+    }
 
   object Typed {
     def unapply(subject: AnyRef): Option[S] = subject match {
@@ -412,9 +424,103 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 
 trait Getter[T] extends NoTransformer[T]
 
+object Getter {
+  def apply[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
+    def getter = body
+  }
+
+  /** Defines a getter field for a type. */
+  def apply[S <: AnyRef,T](getter1: S => Option[T])(implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] =
+    new FieldGetter[S,T] with Getter[T] {
+      def get(subject: S) = getter1(subject)
+
+      override def toString = "getter[" + subjectManifest.erasure.getSimpleName + "]"
+    }
+}
+
 trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
 
+object Setter {
+  def apply[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
+    def setter = body
+  }
+
+  /** Defines setter field for a mutable type with Option as the value type. */
+  def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
+    new FieldSetter[S,T] {
+      def subjectManifest = _subjectManifest
+
+      def set(subject: S, valueOpt: Option[T]) {
+        body(subject)(valueOpt)
+      }
+
+      def getter = PortableField.emptyPartialFunction
+
+      override def toString = "setter[" + subjectManifest.erasure.getSimpleName + "]"
+    }
+  }
+
+  /**
+   * Defines a setter field for a Writable type, with separate functions for Some and None.
+   * The setter operates on a value directly, rather than on an Option.
+   * The clearer is used when the value is None.
+   * @param clearer a function or 'noSetterForEmpty'
+   */
+  def apply[S <: AnyRef,T](body: S => T => Unit, clearer: S => Unit)
+                          (implicit subjectManifest: ClassManifest[S]): FieldSetter[S,T] =
+    apply[S,T](fromDirect(body, clearer))
+
+  private def fromDirect[S,T](setter: S => T => Unit, clearer: S => Unit = {_: S => })
+                             (implicit subjectManifest: ClassManifest[S]): S => Option[T] => Unit = {
+    subject => { valueOpt =>
+      valueOpt match {
+        case Some(value) => setter(subject)(value)
+        case None => clearer(subject)
+      }
+    }
+  }
+}
+
 trait Transformer[T] extends NoGetter[T] with NoSetter[T]
+
+object Transformer {
+  def apply[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
+    def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
+      case subject: S if body.isDefinedAt(subject) => value => body(subject)(value).asInstanceOf[S]
+    }
+  }
+
+  /**
+   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
+   * @param S the Subject type to transform using the value
+   */
+  def apply[S <: AnyRef,T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
+    new Transformer[T] with SubjectField {
+      def transformer[S1]: PartialFunction[S1,Option[T] => S1] = {
+        case subject: S if subjectManifest.erasure.isInstance(subject) => value =>
+          body(subject)(value).asInstanceOf[S1]
+      }
+
+      def subjectManifest = _subjectManifest
+
+      override def toString = "transformer[" + subjectManifest.erasure.getSimpleName + "]"
+    }
+
+  /**
+   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
+   * theTransform operates on a value directly, rather than on an Option.
+   * The clearer is used when the value is None.
+   * @param S the Subject type to transform using the value
+   * @param clearer a function or 'noSetterForEmpty'
+   */
+  def apply[S <: AnyRef,T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
+    Transformer((subject: S) => { (valueOpt: Option[T]) =>
+      valueOpt match {
+        case Some(value: T) => body(subject)(value).asInstanceOf[S]
+        case None => clearer(subject).asInstanceOf[S]
+      }
+    })
+}
 
 abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDelegate[T] {
   protected def delegate = field
@@ -427,9 +533,10 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
 
   def setter = field.setter.andThen(setter => setter.compose(value => value.flatMap(unconvert(_))))
 
-  def transformer[S <: AnyRef] = {
+  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
     case subject: S if field.transformer[S].isDefinedAt(subject) => { value =>
-      field.transformer(subject)(value.flatMap(unconvert(_)))
+      val unconvertedValue: Option[F] = value.flatMap(unconvert(_))
+      field.transformer[S].apply(subject)(unconvertedValue)
     }
   }
 
@@ -459,10 +566,6 @@ object PortableField {
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
   implicit def toSome[T](value: T): Option[T] = Some(value)
 
-  def getter[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
-    def getter = body
-  }
-
   /**
     * Like getter, but passes the list of items so that more than one of the Subjects can be used
     * in getting the value.
@@ -471,96 +574,18 @@ object PortableField {
     override def getterFromItem = body
   }
 
-  def setter[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
-    def setter = body
-  }
-
-  def transformer[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
-    def transformer[S <: AnyRef] = {
-      case subject: S if body.isDefinedAt(subject) => value => body.apply(subject)(value).asInstanceOf[S]
-    }
-  }
-
-  /** Defines read-only field for a Readable type. */
-  def readOnly[S <: AnyRef,T](getter1: S => Option[T])
-                   (implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] =
-    new FieldGetter[S,T] with Getter[T] {
-      def get(subject: S) = getter1(subject)
-
-      override def toString = "readOnly[" + subjectManifest.erasure.getSimpleName + "]"
-    }
-
   /** Defines a read-only field for returning the subject item itself (as an Option). */
   def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) = new DelegatingPortableField[S] {
-    val delegate = readOnly[S,S](subject => Some(subject))
+    val delegate = Getter[S,S](subject => Some(subject))
 
     override def toString = "identifyField[" + subjectManifest.erasure.getSimpleName + "]"
   }
 
-  /** Defines write-only field for a Writable type with Option as the type. */
-  def writeOnly[S <: AnyRef,T](setter1: S => Option[T] => Unit)
-                              (implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
-    new FieldSetter[S,T] {
-      def subjectManifest = _subjectManifest
+  /** A common function for the second parameter such as <code>Setter[S,T](..., noSetterForEmpty)</code>. */
+  def noSetterForEmpty[S]: S => Unit = {_: S => }
 
-      def set(subject: S, valueOpt: Option[T]) {
-        setter1(subject)(valueOpt)
-      }
-
-      def getter = emptyPartialFunction
-
-      override def toString = "writeOnly[" + subjectManifest.erasure.getSimpleName + "]"
-    }
-  }
-
-  private def fromDirect[S,T](setter: S => T => Unit, clearer: S => Unit = {_: S => })
-                             (implicit subjectManifest: ClassManifest[S]): S => Option[T] => Unit = {
-    subject => { valueOpt =>
-      valueOpt match {
-        case Some(value) => setter(subject)(value)
-        case None => clearer(subject)
-      }
-    }
-  }
-
-  /**
-   * Defines write-only field for a Writable type.
-   * The setter operates on a value directly, rather than on an Option.
-   * The clearer is used when the value is None.
-   */
-  def writeOnlyDirect[S <: AnyRef,T](setter1: S => T => Unit, clearer: S => Unit = {_: S => })
-                          (implicit subjectManifest: ClassManifest[S]): FieldSetter[S,T] =
-    writeOnly[S,T](fromDirect(setter1, clearer))
-
-  /**
-   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
-   * @param S the Subject type to transform using the value
-   */
-  def transformOnly[S <: AnyRef,T](theTransform: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
-    new Transformer[T] with SubjectField {
-      def transformer[S1] = {
-        case subject: S if subjectManifest.erasure.isInstance(subject) => value =>
-          theTransform(subject)(value).asInstanceOf[S1]
-      }
-
-      def subjectManifest = _subjectManifest
-
-      override def toString = "transformOnly[" + subjectManifest.erasure.getSimpleName + "]"
-    }
-
-  /**
-   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
-   * theTransform operates on a value directly, rather than on an Option.
-   * The clearer is used when the value is None.
-   * @param S the Subject type to transform using the value
-   */
-  def transformOnlyDirect[S <: AnyRef,T](theTransform: S => T => S, clearer: S => S = {s: S => s})(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
-    transformOnly[S,T](subject => { valueOpt =>
-      valueOpt match {
-        case Some(value) => theTransform(subject)(value).asInstanceOf[S]
-        case None => clearer(subject).asInstanceOf[S]
-      }
-    })
+  /** A common function for the second parameter such as <code>Transformer[S,T](..., noTransformerForEmpty)</code>. */
+  def noTransformerForEmpty[S]: S => S = {s => s}
 
   /** Defines a default for a field value, used when copied from [[scala.runtime.Unit]]. */
   def default[T](value: => T): PortableField[T] = new Getter[T] {
@@ -569,34 +594,10 @@ object PortableField {
     override def toString = "default(" + value + ")"
   }
 
-  /**
-   * Defines PortableField for  a field value using a getter, setter and clearer.
-   * The setter operates on a value directly, rather than on an Option.
-   * The clearer is used when the value is None.
-   * @param S the Subject being accessed
-   * @param T the value type
-   */
-  def fieldDirect[S <: AnyRef,T](getter: S => Option[T], setter: S => T => Unit, clearer: S => Unit = {_: S => })
-                      (implicit subjectManifest: ClassManifest[S]): PortableField[T] =
-    field[S,T](getter, fromDirect(setter, clearer))
-
-  /**
-   * Defines PortableField for a field value using a setter and getter, both operating on an Option.
-   * @param S the subject being accessed
-   * @param T the value type
-   */
-  def field[S <: AnyRef,T](getter1: S => Option[T], setter1: S => Option[T] => Unit)
-                (implicit _subjectManifest: ClassManifest[S]): PortableField[T] = new DelegatingPortableField[T] with SubjectField {
-    val delegate = readOnly[S,T](getter1) + writeOnly[S,T](setter1)
-
-    def subjectManifest = _subjectManifest
-
-    override def toString = "field[" + subjectManifest.erasure.getSimpleName + "]"
-  }
-
   def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
-    val delegate = readOnly[Map[K,_ <: T],T](_.get(key)) + writeOnlyDirect[mutable.Map[K,_ >: T],T](m => v => m.put(key, v), _.remove(key)) +
-            transformOnlyDirect[immutable.Map[K,_ >: T],T](map => value => map + (key -> value), _ - key)
+    val delegate = Getter[Map[K,_ <: T],T](_.get(key)) +
+      Transformer((m: immutable.Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: immutable.Map[K,_ >: T]) => m - key) +
+      Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
 
     override def toString = "mapField(" + key + ")"
   }
@@ -605,11 +606,11 @@ object PortableField {
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
   def adjustmentInPlace[S <: AnyRef](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
-    default[Unit](Unit) + writeOnly[S,Unit](s => u => adjuster(s))
+    default[Unit](Unit) + Setter((s: S) => u => adjuster(s))
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
   def adjustment[S <: AnyRef](adjuster: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
-    default[Unit](Unit) + transformOnly[S,Unit](s => u => adjuster(s))
+    default[Unit](Unit) + Transformer((s: S) => (u: Option[Unit]) => adjuster(s))
 
   def converted[A,B](converter1: Converter[A,B], converter2: Converter[B,A], field: PortableField[B]): PortableField[A] =
     new ConvertedField[A,B](field) {

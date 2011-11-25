@@ -30,18 +30,16 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     class OtherEntity(var name: String, var myBoolean: Boolean)
 
     it("must be easily instantiable for an Entity") {
-      readOnly[MyEntity,String](e => e.myString).withSetter(e => _.foreach(e.myString = _))
-      fieldDirect[MyEntity,Int](e => e.number, e => e.number = _)
-      fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _) +
-        readOnly[OtherEntity,String](e => e.name) +
-        writeOnlyDirect[OtherEntity,String](e => e.name = _)
-      fieldDirect[MyEntity,Int](e => e.number, e => e.number = _)
-      readOnly[MyEntity,Int](e => e.number)
+      Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
+      Getter[MyEntity,Int](e => e.number).withSetter(e => e.number = _, noSetterForEmpty)
+      Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty) +
+        Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty)
+      Getter[MyEntity,Int](e => e.number)
     }
 
     describe("copy") {
       it("must set defaults") {
-        val stringField = fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _) + default("Hello")
+        val stringField = Setter((e: MyEntity) => (v: String) => e.myString = v, noSetterForEmpty) + default("Hello")
 
         val myEntity1 = new MyEntity("my1", 15)
         stringField.copy(unitAsRef, myEntity1)
@@ -69,9 +67,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
       it("must copy from one to multiple") {
         val stringField =
-          readOnly[OtherEntity,String](e => e.name) +
-          writeOnlyDirect[OtherEntity, String](e => e.name = _) +
-          fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
+          Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
+          Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
 
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
@@ -206,8 +203,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
         val stringField = mapField[String]("stringValue") +
-          fieldDirect[OtherEntity,String](e => e.name, e => e.name = _) +
-          fieldDirect[MyEntity,String](e => e.myString, e => e.myString = _)
+          Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
+          Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
         stringField.getterFromItem.isDefinedAt(List(myEntity1, otherEntity1)) must be (true)
         stringField.getterFromItem.isDefinedAt(List(new Object)) must be (false)
         stringField.getterFromItem(List(myEntity1, otherEntity1)) must be (Some("other1"))
@@ -249,9 +246,9 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
 
-    describe("writeOnlyDirect") {
+    describe("setter") {
       it("must call clearer if no value") {
-        val stringField = writeOnlyDirect[Buffer[String],String]({ b => v => b += v; Unit }, _.clear())
+        val stringField = Setter({ (b: Buffer[String]) => (v: String) => b += v; Unit }, (b: Buffer[String]) => b.clear())
         val buffer = Buffer("hello")
         stringField.setValue(buffer, None)
         buffer must be ('empty)
@@ -294,9 +291,9 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
       }
     }
 
-    describe("transformOnlyDirect") {
-      it("must provide a default for the clearer") {
-        transformOnlyDirect[String,String](string => v => string + v)
+    describe("Transformer") {
+      it("must provide a convenient clearer") {
+        Transformer((string: String) => (v: String) => string + v, noTransformerForEmpty)
       }
     }
 
@@ -323,7 +320,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
       it("must use all transformers of a field") {
         val stringField = mapField[String]("greeting") +
-                transformOnlyDirect[immutable.Map[String,String],String](map => ignored => map + ("greeting" -> map("greeting").toUpperCase), map => map)
+                Transformer((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
+                  (map: Map[String,String]) => map)
         //qualified to point out that it's immutable
         val result: Map[String,String] = stringField.transformer[immutable.Map[String,String]](immutable.Map.empty)(Some("hello"))
         result.get("greeting") must be (Some("HELLO"))
@@ -333,7 +331,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     describe("transform") {
       it("must use an initial and some data") {
         val stringField = mapField[String]("greeting") +
-                transformOnlyDirect[immutable.Map[String,String],String](map => ignored => map + ("greeting" -> map("greeting").toUpperCase), map => map)
+                Transformer((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
+                  (map: Map[String,String]) => map)
         //qualified to point out that it's immutable
         val result = stringField.transform(initial = immutable.Map.empty[String,String], data = immutable.Map("greeting" -> "hello", "ignored" -> "foo"))
         result must be (immutable.Map[String,String]("greeting" -> "HELLO"))
@@ -378,19 +377,19 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     }
 
     it("must support easily specifying a getter as a partial function") {
-      val field = getter[Int] { case subject: AnyRef => 3 }
+      val field = Getter[Int] { case subject: AnyRef => 3 }
       field("hello") must be (3)
     }
 
     it("must support easily specifying a setter as a partial function") {
-      val field = setter[Int] { case subject: Buffer[Int] => _.foreach(value => subject += value) }
+      val field = Setter[Int] { case subject: Buffer[Int] => _.foreach(value => subject += value) }
       val buffer = Buffer[Int](1, 2)
       field.setValue(buffer, Some(3))
       buffer.toList must be (List(1, 2, 3))
     }
 
     it("must support easily specifying a transformer as a partial function") {
-      val field = transformer[Int] {
+      val field = Transformer[Int] {
         case subject: List[Int] => value => value.map(_ +: subject).getOrElse(subject)
       }
       field.transformWithValue(List(2, 3), Some(1)) must be (List(1, 2, 3))
@@ -398,7 +397,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
 
     describe("transformer") {
       it("must support None as the value") {
-        val field = transformer[Int] { case subject: List[Int] => _.map(value => value +: subject).getOrElse(subject) }
+        val field = Transformer[Int] { case subject: List[Int] => _.map(value => value +: subject).getOrElse(subject) }
         field.transform(List(2, 3), None) must be (List(2, 3))
       }
     }
