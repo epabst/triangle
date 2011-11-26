@@ -31,7 +31,13 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   //this is only here to help the IDE to infer the type concretely
   override def productIterator: Iterator[PortableField[_]] = super.productIterator
 
-  private trait InnerTupleField extends BaseField {
+  trait TupleField[T] extends PortableField[T] {
+    /** Allows chaining such as {{{FieldTuple(...).getter(...).withTransformer(...)}}}. */
+    def withTransformer(splitter: T => ValuesTuple): PortableField[T] = {
+      val theTransformer = FieldTuple.this.transformer(splitter)
+      new Field[T](this + theTransformer)
+    }
+
     override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
       val lifted = f.lift
       productIterator.toList.flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
@@ -39,8 +45,8 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   }
 
   /** Creates a Getter PortableField that accepts a composite type T and a combiner function. */
-  def getter[T](combiner: ValuesTuple => Option[T]): Getter[T] = {
-    new Getter[T] with InnerTupleField {
+  def getter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
+    new Getter[T] with TupleField[T] {
       def getter = {
         case ref if productIterator.forall(_.getter.isDefinedAt(ref)) => combiner(valuesTuple(ref))
       }
@@ -49,7 +55,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
 
   /** Creates a Transformer and Setter PortableField that accepts a composite type T and a splitter function. */
   def transformer[T](splitter: T => ValuesTuple): NoGetter[T] = {
-    new NoGetter[T] with InnerTupleField {
+    new NoGetter[T] with TupleField[T] {
       def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
         case ref if productIterator.forall(_.transformer.isDefinedAt(ref)) => (valueOpt: Option[T]) =>
           transformWithValues(ref, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))

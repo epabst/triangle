@@ -145,6 +145,12 @@ class FieldTupleSpec extends Spec with MustMatchers {
         case f if f == doubleField => f
       } must be (List(intField, doubleField))
     }
+
+    it("must support withTransformer") {
+      val transformer = getter.withTransformer(v => FieldTuple.toTuple3OfSomes[Int,String,Double]((v.int, v.string, v.double)))
+      val map = transformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+      map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
+    }
   }
 
   describe("transformer") {
