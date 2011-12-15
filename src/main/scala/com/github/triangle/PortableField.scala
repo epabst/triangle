@@ -283,9 +283,11 @@ object PortableField {
   /** A common function for the second parameter such as <code>Transformer[S,T](..., noTransformerForEmpty)</code>. */
   def noTransformerForEmpty[S]: S => S = {s => s}
 
-  /** Defines a default for a field value, used when copied from [[scala.runtime.Unit]]. */
+  val UseDefaults = Unit.asInstanceOf[AnyRef]
+
+  /** Defines a default for a field value, used when copied from UseDefaults. */
   def default[T](value: => T): PortableField[T] = new Getter[T] {
-    def getter = { case Unit => Some(value) }
+    def getter = { case UseDefaults => Some(value) }
 
     override def toString = "default(" + value + ")"
   }

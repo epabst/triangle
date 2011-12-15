@@ -25,7 +25,7 @@ class FieldListSpec extends Spec with MustMatchers {
       val map = mutable.Map[String, Any]()
 
       //copy where only one field has an accessor
-      fields.copy(Unit, map)
+      fields.copy(PortableField.UseDefaults, map)
       map.contains("count") must be (true)
       countField(map) must be (10)
       map.contains("price") must be (false)
@@ -44,7 +44,7 @@ class FieldListSpec extends Spec with MustMatchers {
       val fields = FieldList(countField, priceField)
       val map = mutable.Map[String, Any]()
 
-      val itemList = List(new Object, Unit, Map("count" -> 11, "price" -> 300.0))
+      val itemList = List(new Object, PortableField.UseDefaults, Map("count" -> 11, "price" -> 300.0))
       fields.copyFromItem(itemList, map)
       //should use the default since first in the item list
       map.get("count") must be (Some(10))
@@ -58,7 +58,7 @@ class FieldListSpec extends Spec with MustMatchers {
       val map = mutable.Map[String, Any]()
 
       //copy where only one field has an accessor
-      fields.copy(Unit, map)
+      fields.copy(PortableField.UseDefaults, map)
       map.contains("count") must be (true)
       countField(map) must be (10)
       map.contains("price") must be (false)
@@ -78,7 +78,7 @@ class FieldListSpec extends Spec with MustMatchers {
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
       val result = fields.transformWithItem(initial = immutable.Map.empty[String,Any],
-                                            dataItems = List(Unit, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)))
+                                            dataItems = List(PortableField.UseDefaults, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)))
       result must be (immutable.Map[String,Any]("count" -> 12, "price" -> 100.0))
     }
   }
