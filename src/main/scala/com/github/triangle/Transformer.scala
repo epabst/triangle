@@ -1,9 +1,7 @@
 package com.github.triangle
 
-trait TransformerUsingSetter[T] extends PortableField[T] {
-  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-    case subject if setter.isDefinedAt(subject) => { value => setter(subject).apply(value); subject }
-  }
+trait NoSetter[T] extends PortableField[T] {
+  def setter = PortableField.emptyPartialFunction
 }
 
 private[triangle] trait NoTransformer[T] extends NoSetter[T] {
