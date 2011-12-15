@@ -1,6 +1,6 @@
 package com.github.triangle
 
-import collection._
+import collection.mutable
 
 /**
  * A portable field of a specific type which applies to Cursors, Views, Model objects, etc.
@@ -154,7 +154,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
         transformer[S](initial)(value)
       }
 
-      def valueByField = value.map(v => Map[PortableField[_],Any](self -> v)).getOrElse(Map.empty)
+      def valueByField: Map[PortableField[_], Any] = value.map(v => Map[PortableField[_],Any](self -> v)).getOrElse(Map.empty)
 
       override def toString = value.toString
     }
@@ -200,7 +200,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
       def transformer[S <: AnyRef] = {
         case subject if self.transformer.isDefinedAt(subject) || other.transformer.isDefinedAt(subject) => { value =>
           val definedFields = List(self, other).filter(_.transformer.isDefinedAt(subject))
-          definedFields.foldLeft(subject)((subject, field) => field.transformer(subject)(value))
+          definedFields.foldLeft(subject)((subject, field) => field.transformer[S](subject)(value))
         }
       }
 
@@ -292,7 +292,7 @@ object PortableField {
 
   def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
     val delegate = Getter[Map[K,_ <: T],T](_.get(key)) +
-      Transformer((m: immutable.Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: immutable.Map[K,_ >: T]) => m - key) +
+      Transformer((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
       Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
 
     override def toString = "mapField(" + key + ")"
