@@ -20,9 +20,6 @@ trait PortableValue {
    */
   def transform[S <: AnyRef](initial: S): S
 
-  /**
-    * Returns the value (if found) for each PortableField contained in this PortableValue.
-    * @return the values as a Map
-    */
-  def valueByField: Map[PortableField[_], Any]
+  /** Returns the value contained in this value for the given PortableField. */
+  def get[T](field: PortableField[T]): Option[T]
 }

@@ -135,8 +135,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  private def copyFromUsingGetFunction[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F): PortableValue = {
-    val value = if (get.isDefinedAt(from)) get(from) else None
+  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue = {
+    val value: Option[T] = if (getFunction.isDefinedAt(from)) getFunction(from) else None
     new PortableValue {
       def copyTo(to: AnyRef) {
         if (setter.isDefinedAt(to)) {
@@ -154,7 +154,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
         transformer[S](initial)(value)
       }
 
-      def valueByField: Map[PortableField[_], Any] = value.map(v => Map[PortableField[_],Any](self -> v)).getOrElse(Map.empty)
+      def get[T2](field: PortableField[T2]): Option[T2] = if (self == field) value.asInstanceOf[Option[T2]] else None
 
       override def toString = value.toString
     }
@@ -291,7 +291,7 @@ object PortableField {
   }
 
   def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
-    val delegate = Getter[Map[K,_ <: T],T](_.get(key)) +
+    val delegate = Getter[collection.Map[K,_ <: T],T](_.get(key)) +
       Transformer((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
       Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
 

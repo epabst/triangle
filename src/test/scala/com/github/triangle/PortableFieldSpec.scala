@@ -172,18 +172,19 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val map = mutable.Map[String,Any]()
         portableValue.copyTo(map)
         map.get("greeting") must be (Some("Hello"))
-        portableValue.valueByField must be (Map(stringField -> "Hello"))
+        portableValue.get(stringField) must be (Some("Hello"))
       }
 
       it("must return a working PortableValue if getter !isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
         val portableValue: PortableValue = stringField.copyFrom("string")
         portableValue must not(be(null))
+        portableValue.get(stringField) must be (None)
+        portableValue.get(default("Hi")) must be (None)
 
         val map = mutable.Map[String,Any]("greeting" -> "obsolete value")
         portableValue.copyTo(map)
         map.get("greeting") must be (None)
-        portableValue.valueByField.size must be (0)
       }
     }
 
@@ -193,7 +194,8 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
         val intField = mapField[Int]("times")
         val map = Map[String, Any]("greeting" -> "hi", "times" -> 2)
         val portableValue: PortableValue = FieldList(stringField, intField).copyFromItem(List(new Object, map))
-        portableValue.valueByField must be (Map(stringField -> "hi", intField -> 2))
+        portableValue.get(stringField) must be (Some("hi"))
+        portableValue.get(intField) must be (Some(2))
       }
 
     }
