@@ -291,11 +291,12 @@ object PortableField {
   /** A common function for the second parameter such as <code>Transformer[S,T](..., noTransformerForEmpty)</code>. */
   def noTransformerForEmpty[S]: S => S = {s => s}
 
-  val UseDefaults = Unit.asInstanceOf[AnyRef]
+  private sealed class UseDefaults
+  val UseDefaults: AnyRef = new UseDefaults
 
   /** Defines a default for a field value, used when copied from UseDefaults. */
   def default[T](value: => T): PortableField[T] = new Getter[T] {
-    def getter = { case UseDefaults => Some(value) }
+    def getter = { case _: UseDefaults => Some(value) }
 
     override def toString = "default(" + value + ")"
   }
