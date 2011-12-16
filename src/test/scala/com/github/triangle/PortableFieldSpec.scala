@@ -37,57 +37,12 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     describe("copy") {
-      it("must set defaults") {
-        val stringField = Setter((e: MyEntity) => (v: String) => e.myString = v, noSetterForEmpty) + default("Hello")
-
-        val myEntity1 = new MyEntity("my1", 15)
-        stringField.copy(PortableField.UseDefaults, myEntity1)
-        myEntity1.myString must be ("Hello")
-        myEntity1.number must be (15)
-        //shouldn't fail
-        stringField.copy(myEntity1, PortableField.UseDefaults)
-      }
-
       it("must happen if getter and setter are applicable") {
         val stringField = default("Hello") + mapField("greeting")
         val map = mutable.Map[String,Any]("greeting" -> "Hola")
         stringField.getter(PortableField.UseDefaults) must be (Some("Hello"))
         stringField.copy(PortableField.UseDefaults, map)
         map.get("greeting") must be (Some("Hello"))
-      }
-
-      it("must call the setter even if the getter isn't applicable") {
-        val stringField = default("Hello") + mapField("greeting")
-        val map = mutable.Map[String,Any]("greeting" -> "Hola")
-        stringField.getter.isDefinedAt(new Object) must be (false)
-        stringField.copy(new Object, map)
-        map.get("greeting") must be (None)
-      }
-
-      it("must copy from one to multiple") {
-        val stringField =
-          Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
-          Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
-
-        val myEntity1 = new MyEntity("my1", 1)
-        val otherEntity1 = new OtherEntity("other1", false)
-        stringField.copy(myEntity1, otherEntity1)
-        myEntity1.myString must be ("my1")
-        myEntity1.number must be (1)
-        otherEntity1.name must be ("my1")
-        otherEntity1.myBoolean must be (false)
-
-        val otherEntity2 = new OtherEntity("other2", true)
-        val myEntity2 = new MyEntity("my2", 2)
-        stringField.copy(otherEntity2, myEntity2)
-        otherEntity2.name must be ("other2")
-        otherEntity2.myBoolean must be (true)
-        myEntity2.myString must be ("other2")
-        myEntity2.number must be (2)
-
-        stringField.copy(new Object, myEntity2) //does nothing
-
-        stringField.copy(otherEntity2, new Object) //does nothing
       }
     }
 
