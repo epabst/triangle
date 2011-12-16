@@ -2,8 +2,6 @@ package com.github.triangle
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
 import PortableField._
 import scala.collection._
 
@@ -16,7 +14,10 @@ import scala.collection._
  */
 
 @RunWith(classOf[JUnitRunner])
-class FieldListSpec extends Spec with MustMatchers {
+class FieldListSpec extends BaseFieldContractSpec {
+  //required by contract spec
+  def toBaseField[T](field: PortableField[T]) = FieldList(field)
+
   describe("copy") {
     it("must copy values that apply") {
       val countField = default[Int](10) + mapField("count")

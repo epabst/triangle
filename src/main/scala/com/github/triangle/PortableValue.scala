@@ -6,13 +6,9 @@ package com.github.triangle
 trait PortableValue {
   /**
    * Copies this value to {{{to}}}, if possible.
+   * @params contextItems a List of items that may be used by {{{setterUsingItems}}}.
    */
-  def copyTo(to: AnyRef)
-
-  /**
-   * Copies this value to {{{to}}} without seeing if the setter isDefinedAt that {{{to}}}.
-   */
-  protected[triangle] def copyToDefinedAt(to: AnyRef)
+  def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil)
 
   /**
    * Transforms the {{{initial}}} subject using this value.

@@ -2,8 +2,6 @@ package com.github.triangle
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
 import PortableField._
 import org.scalatest.mock.EasyMockSugar
 import collection.{immutable, mutable}
@@ -18,10 +16,13 @@ import Converter._
  */
 
 @RunWith(classOf[JUnitRunner])
-class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
+class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
   object LengthField extends Getter[Int] {
     def getter = { case s: String => s.length }
   }
+
+  //required by contract spec
+  def toBaseField[T](field: PortableField[T]) = field
 
   describe("PortableField") {
     class MyEntity(var myString: String, var number: Int)
@@ -101,7 +102,7 @@ class PortableFieldSpec extends Spec with MustMatchers with EasyMockSugar {
     }
 
     describe("default") {
-      it("must only work on Unit") {
+      it("must only work on PortableField.UseDefaults") {
         val stringField = default("Hello")
         stringField.getter.isDefinedAt(List("bogus list")) must be (false)
         stringField.getter(PortableField.UseDefaults) must be (Some("Hello"))

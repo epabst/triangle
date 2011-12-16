@@ -71,6 +71,12 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def setter: PartialFunction[AnyRef,Option[T] => Unit]
 
+  /** A setter that also has access to some items such as context that may be helpful when setting.
+    */
+  def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit] = {
+    case (subject, _) if setter.isDefinedAt(subject) => v => setter(subject)(v)
+  }
+
   /**
    * Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
    * @return true if any were successful
@@ -119,34 +125,34 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def copyFromItem(fromItems: List[AnyRef]) = copyFromUsingGetFunction(getterFromItem, fromItems)
 
   override def copy(from: AnyRef, to: AnyRef) {
-    copyUsingGetFunctionCheckingSetterFirst(getter, from, to)
+    copyUsingGetFunctionCheckingSetterFirst(getter, from, (to, List(from)))
   }
 
   //inherited
   override def copyFromItem(fromItems: List[AnyRef], to: AnyRef) {
-    copyUsingGetFunctionCheckingSetterFirst(getterFromItem, fromItems, to)
+    copyUsingGetFunctionCheckingSetterFirst(getterFromItem, fromItems, (to, fromItems))
   }
 
-  private def copyUsingGetFunctionCheckingSetterFirst[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F, to: AnyRef) {
-    if (setter.isDefinedAt(to)) {
-      copyFromUsingGetFunction(get, from).copyTo(to)
+  private def copyUsingGetFunctionCheckingSetterFirst[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F, toAndItems: (AnyRef,List[AnyRef])) {
+    if (setterUsingItems.isDefinedAt(toAndItems)) {
+      copyFromUsingGetFunction(get, from).copyTo(toAndItems._1, toAndItems._2)
     } else {
-      debug("Unable to copy" + from_to_for_field_message(from, to, this)  + " due to setter.")
+      debug("Unable to copy" + from_to_for_field_message(from, toAndItems._1, this)  + " due to setter.")
     }
   }
 
   private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue = {
     val value: Option[T] = if (getFunction.isDefinedAt(from)) getFunction(from) else None
     new PortableValue {
-      def copyTo(to: AnyRef) {
-        if (setter.isDefinedAt(to)) {
-          copyToDefinedAt(to)
+      def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
+        if (setterUsingItems.isDefinedAt((to, contextItems))) {
+          copyToDefinedAt(to, contextItems)
         }
       }
 
-      protected[triangle] def copyToDefinedAt(to: AnyRef) {
+      private def copyToDefinedAt(to: AnyRef, contextItems: List[AnyRef]) {
         debug("Copying " + value + from_to_for_field_message(from, to, self))
-        setter(to)(value)
+        setterUsingItems((to, contextItems))(value)
       }
 
       def transform[S <: AnyRef](initial: S): S = {
@@ -169,31 +175,33 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
       def getter = {
         case x if self.getter.isDefinedAt(x) || other.getter.isDefinedAt(x) => {
-          val values = List(self.getter, other.getter).view.filter(_.isDefinedAt(x)).map(_(x))
+          val values = List(self, other).view.map(_.getter).filter(_.isDefinedAt(x)).map(_(x))
           values.find(_.isDefined).getOrElse(None)
         }
       }
 
       override def getterFromItem = {
         case x if self.getterFromItem.isDefinedAt(x) || other.getterFromItem.isDefinedAt(x) => {
-          val values = List(self.getterFromItem, other.getterFromItem).view.filter(_.isDefinedAt(x)).map(_(x))
+          val values = List(self, other).view.map(_.getterFromItem).filter(_.isDefinedAt(x)).map(_(x))
           values.find(_.isDefined).getOrElse(None)
         }
       }
 
-      /**
-       * Combines the two setters, calling only applicable ones (not just the first though).
-       */
-      lazy val setter = new PartialFunction[AnyRef,Option[T] => Unit] {
-        def isDefinedAt(x: AnyRef) = self.setter.isDefinedAt(x) || other.setter.isDefinedAt(x)
+      /** Combines the two setters, calling only applicable ones (not just the first though). */
+      def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
+        case x if self.setter.isDefinedAt(x) || other.setter.isDefinedAt(x) => { value =>
+          val definedFields = List(self, other).view.filter(_.setter.isDefinedAt(x))
+          if (definedFields.isEmpty) throw new MatchError("setter in " + PortableField.this)
+          else definedFields.foreach(_.setter(x)(value))
+        }
+      }
 
-        def apply(subject: AnyRef) = { value =>
-          val definedFields = List(self, other).filter(_.setter.isDefinedAt(subject))
-          if (definedFields.isEmpty) {
-            throw new MatchError("setter in " + PortableField.this)
-          } else {
-            definedFields.foreach(_.setter(subject)(value))
-          }
+      /** Combines the two setterUsingItems, calling only applicable ones (not just the first though). */
+      override def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit] = {
+        case x if self.setterUsingItems.isDefinedAt(x) || other.setterUsingItems.isDefinedAt(x) => { value =>
+          val definedFields = List(self, other).view.filter(_.setterUsingItems.isDefinedAt(x))
+          if (definedFields.isEmpty) throw new MatchError("setterUsingItems in " + PortableField.this)
+          else definedFields.foreach(_.setterUsingItems(x)(value))
         }
       }
 

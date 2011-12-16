@@ -23,12 +23,12 @@ trait BaseField {
   /**
    * Copies this field from {{{from}}} to {{{to}}}, if possible.
    */
-  def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to) }
+  def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to, List(from)) }
 
   /**
    * Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible.
    */
-  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(fromItems).copyTo(to) }
+  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(fromItems).copyTo(to, fromItems) }
 
   /**
    * Transforms the {{{initial}}} subject using the {{{data}}} for this field..
