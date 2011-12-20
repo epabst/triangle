@@ -6,23 +6,31 @@ trait TransformerUsingSetter[T] extends PortableField[T] {
   }
 }
 
+trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
+
+trait SetterUsingItems[T] extends Setter[T] {
+  def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit]
+
+  def setter = {
+    case context if setterUsingItems.isDefinedAt((context, Nil)) => setterUsingItems((context, Nil))
+  }
+}
+
 /**
  * {@PortableField} support for setting a value if {{{subject}}} is of type S.
  * This is a trait so that it can be mixed with FieldGetter.
  * @param S the Writable type to put the value into
  */
-trait FieldSetter[S <: AnyRef,T] extends FieldWithSubject[S,T] with TransformerUsingSetter[T] with Logging {
+trait FieldSetter[S <: AnyRef,T] extends SetterUsingItems[T] with FieldWithSubject[S,T] with TransformerUsingSetter[T] with Logging {
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
-  def set(subject: S, value: Option[T])
+  def set(subject: S, value: Option[T], items: List[AnyRef])
 
-  def setter = {
-    case subject: S if subjectManifest.erasure.isInstance(subject) => set(subject, _)
+  override def setterUsingItems = {
+    case (subject: S, items) if subjectManifest.erasure.isInstance(subject) => set(subject, _, items)
   }
 }
-
-trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
 
 object Setter {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
@@ -34,11 +42,9 @@ object Setter {
     new FieldSetter[S,T] {
       def subjectManifest = _subjectManifest
 
-      def set(subject: S, valueOpt: Option[T]) {
+      def set(subject: S, valueOpt: Option[T], items: List[AnyRef]) {
         body(subject)(valueOpt)
       }
-
-      def getter = PortableField.emptyPartialFunction
 
       override def toString = "setter[" + subjectManifest.erasure.getSimpleName + "]"
     }
@@ -61,6 +67,25 @@ object Setter {
         case Some(value) => setter(subject)(value)
         case None => clearer(subject)
       }
+    }
+  }
+}
+
+object SetterUsingItems {
+  def apply[T](body: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit]): Setter[T] = new SetterUsingItems[T] {
+    override def setterUsingItems = body
+  }
+
+  /** Defines setter field for a mutable type with Option as the value type. */
+  def apply[S <: AnyRef,T](body: (S, List[AnyRef]) => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
+    new FieldSetter[S,T] with NoGetter[T] {
+      def subjectManifest = _subjectManifest
+
+      def set(subject: S, valueOpt: Option[T], items: List[AnyRef]) {
+        body(subject, items)(valueOpt)
+      }
+
+      override def toString = "SetterUsingItems[" + subjectManifest.erasure.getSimpleName + "]"
     }
   }
 }

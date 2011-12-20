@@ -79,12 +79,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /**
    * Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
+   * @param items optional extra items usable by the setterUsingItems
    * @return true if any were successful
    */
-  def setValue(subject: AnyRef, value: Option[T]): Boolean = {
-    val defined = setter.isDefinedAt(subject)
-    if (defined) setter(subject)(value)
-    else debug("Unable to set value " + value + " into " + subject + " for field " + this + ".")
+  def setValue(subject: AnyRef, value: Option[T], items: List[AnyRef] = Nil): Boolean = {
+    val defined = setterUsingItems.isDefinedAt(subject, items)
+    if (defined) setterUsingItems(subject, items)(value)
+    else debug("Unable to set value " + value + " into " + subject + " for field " + this + " with items " + items + ".")
     defined
   }
 
