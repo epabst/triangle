@@ -4,9 +4,8 @@ import collection.mutable
 
 /**
  * A portable field of a specific type which applies to Cursors, Views, Model objects, etc.
- * <p>
  * Example:
- * <pre>
+ * {{{
  * import com.github.triangle.PortableField._
  * import com.github.scala.android.crud.persistence.CursorField._
  * import com.github.scala.android.crud.persistence.PersistedType._
@@ -16,8 +15,7 @@ import collection.mutable
  *   persisted[String]("name") + viewId(R.id.name, textView),
  *   persisted[Double]("score") + viewId(R.id.score, formatted[Double](textView))
  * )
- * </pre>
- * <p>
+ * }}}
  * Usage of implicits and defaults make this syntax concise for the simple cases,
  * but allow for very complex situations as well by providing explicit values when needed.
  * @param T the value type that this PortableField gets and sets.
@@ -32,8 +30,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /** extractor for finding the applicable items, if any. */
   private object ApplicableItems {
-    def unapply(items: List[AnyRef]): Option[List[AnyRef]] = {
-      val applicableItems = items.filter(getter.isDefinedAt(_))
+    def unapply(items: List[_]): Option[List[AnyRef]] = {
+      val applicableItems = items.map(_.asInstanceOf[AnyRef]).filter(getter.isDefinedAt(_))
       if (applicableItems.isEmpty) None else Some(applicableItems)
     }
   }
@@ -43,7 +41,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * If none of them has Some value, then it will return None if at least one of them applies.
    * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
    */
-  def getterFromItem: PartialFunction[List[AnyRef],Option[T]] = {
+  def getterFromItem: PartialFunction[List[_],Option[T]] = {
     case ApplicableItems(items) => items.view.map(getter(_)).find(_.isDefined).getOrElse(None)
   }
 
@@ -62,7 +60,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def unapply(subject: AnyRef): Option[Option[T]] = subject match {
     case x if getter.isDefinedAt(x) => Some(getter(x))
-    case items: List[AnyRef] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
+    case items: List[_] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
     case _ => None
   }
 
@@ -98,7 +96,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   /**
    * PartialFunction for transforming an AnyRef using an optional value.
    * This delegates to {{{setter}}} for mutable objects.
-   * {{{transformer(foo)(value){{{ should return a transformed version of foo (which could be the same instance if mutable).
+   * {{{transformer(foo)(value)}}} should return a transformed version of foo (which could be the same instance if mutable).
    * Note: Implementations usually must specify the return type to compile properly
    * @param a subject to be transformed, whether immutable or mutable
    */
@@ -277,7 +275,7 @@ object PortableField {
     * Like getter, but passes the list of items so that more than one of the Subjects can be used
     * in getting the value.
     */
-  def getterFromItem[T](body: PartialFunction[List[AnyRef],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
+  def getterFromItem[T](body: PartialFunction[List[_],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
     override def getterFromItem = body
   }
 

@@ -9,7 +9,7 @@ abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassMan
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
-  def getter = { case subject: S if subjectManifest.erasure.isInstance(subject) => get(subject) }
+  def getter = { case subject if subjectManifest.erasure.isInstance(subject) => get(subject.asInstanceOf[S]) }
 }
 
 trait NoGetter[T] extends PortableField[T] {

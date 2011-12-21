@@ -6,7 +6,7 @@ package com.github.triangle
 trait PortableValue {
   /**
    * Copies this value to {{{to}}}, if possible.
-   * @params contextItems a List of items that may be used by {{{setterUsingItems}}}.
+   * @param contextItems a List of items that may be used by PortableField.setterUsingItems.
    */
   def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil)
 

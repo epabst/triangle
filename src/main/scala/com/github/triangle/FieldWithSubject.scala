@@ -26,12 +26,4 @@ trait FieldWithSubject[S <: AnyRef,T] extends PortableField[T] with SubjectField
     new Field[T](this + Transformer(body, clearer)(subjectManifest)) with FieldWithSubject[S,T] {
       def subjectManifest = self.subjectManifest
     }
-
-  object Typed {
-    def unapply(subject: AnyRef): Option[S] = subject match {
-      //subjectManifest.erasure.isInstance(subject)
-      case typedSubject: S => Some(typedSubject)
-      case _ => None
-    }
-  }
 }

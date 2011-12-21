@@ -28,7 +28,7 @@ trait FieldSetter[S <: AnyRef,T] extends SetterUsingItems[T] with FieldWithSubje
   def set(subject: S, value: Option[T], items: List[AnyRef])
 
   override def setterUsingItems = {
-    case (subject: S, items) if subjectManifest.erasure.isInstance(subject) => set(subject, _, items)
+    case (subject, items) if subjectManifest.erasure.isInstance(subject) => set(subject.asInstanceOf[S], _, items)
   }
 }
 

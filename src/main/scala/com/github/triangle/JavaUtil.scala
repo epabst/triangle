@@ -12,7 +12,7 @@ import java.util.HashMap
 object JavaUtil {
   def toJavaMap[K,V](map: Map[K,Option[V]]): java.util.Map[K,V] = {
     val jMap = new HashMap[K,V]
-    for (val (name, value) <- map) {
+    for ((name, value) <- map) {
       jMap.put(name, value.getOrElse(null).asInstanceOf[V])
     }
     jMap

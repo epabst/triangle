@@ -13,7 +13,7 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
   def setter = field.setter.andThen(setter => setter.compose(value => value.flatMap(unconvert(_))))
 
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-    case subject: S if field.transformer[S].isDefinedAt(subject) => { value =>
+    case subject if field.transformer[S].isDefinedAt(subject) => { value =>
       val unconvertedValue: Option[F] = value.flatMap(unconvert(_))
       field.transformer[S].apply(subject)(unconvertedValue)
     }

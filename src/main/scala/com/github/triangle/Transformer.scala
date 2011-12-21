@@ -13,7 +13,7 @@ trait Transformer[T] extends NoGetter[T] with NoSetter[T]
 object Transformer {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
     def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-      case subject: S if body.isDefinedAt(subject) => value => body(subject)(value).asInstanceOf[S]
+      case subject if body.isDefinedAt(subject) => value => body(subject)(value).asInstanceOf[S]
     }
   }
 
@@ -24,8 +24,8 @@ object Transformer {
   def apply[S <: AnyRef,T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
     new Transformer[T] with SubjectField {
       def transformer[S1]: PartialFunction[S1,Option[T] => S1] = {
-        case subject: S if subjectManifest.erasure.isInstance(subject) => value =>
-          body(subject)(value).asInstanceOf[S1]
+        case subject if subjectManifest.erasure.isInstance(subject) => value =>
+          body(subject.asInstanceOf[S])(value).asInstanceOf[S1]
       }
 
       def subjectManifest = _subjectManifest
@@ -43,7 +43,7 @@ object Transformer {
   def apply[S <: AnyRef,T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
     Transformer((subject: S) => { (valueOpt: Option[T]) =>
       valueOpt match {
-        case Some(value: T) => body(subject)(value).asInstanceOf[S]
+        case Some(value) => body(subject)(value).asInstanceOf[S]
         case None => clearer(subject).asInstanceOf[S]
       }
     })
