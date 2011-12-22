@@ -31,11 +31,17 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   //this is only here to help the IDE to infer the type concretely
   override def productIterator: Iterator[PortableField[_]] = super.productIterator
 
-  trait TupleField[T] extends PortableField[T] {
+  trait TupleField[T] extends PortableField[T] { selfField =>
     /** Allows chaining such as {{{FieldTuple(...).getter(...).withTransformer(...)}}}. */
     def withTransformer(splitter: T => ValuesTuple): PortableField[T] = {
       val theTransformer = FieldTuple.this.transformer(splitter)
-      new Field[T](this + theTransformer)
+      new Field[T](selfField + theTransformer) {
+        override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
+          val lifted = f.lift
+          //don't traverse theTransformer since it duplicates the fields within selfField
+          lifted(this).orElse(lifted(selfField)).map(List(_)).getOrElse(selfField.deepCollect(f))
+        }
+      }
     }
 
     override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {

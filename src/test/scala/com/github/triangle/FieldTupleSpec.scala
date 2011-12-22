@@ -19,6 +19,7 @@ class FieldTupleSpec extends Spec with MustMatchers {
   val intField = default[Int](10) + mapField("int")
   val stringField = default[String]("Hello") + mapField("string")
   val doubleField = default[Double](11.0) + mapField("double")
+  case class IntStringDouble(int: Int, string: String, double: Double)
 
   describe("valuesTuple") {
     it("must extract the field values") {
@@ -128,7 +129,6 @@ class FieldTupleSpec extends Spec with MustMatchers {
   }
 
   describe("getter") {
-    case class IntStringDouble(int: Int, string: String, double: Double)
     val getter = FieldTuple(intField, stringField, doubleField).getter[IntStringDouble] {
       case (Some(int), Some(string), Some(double)) => Some(IntStringDouble(int, string, double))
       case _ => None
@@ -146,15 +146,37 @@ class FieldTupleSpec extends Spec with MustMatchers {
       } must be (List(intField, doubleField))
     }
 
-    it("must support withTransformer") {
-      val transformer = getter.withTransformer(v => FieldTuple.toTuple3OfSomes[Int,String,Double]((v.int, v.string, v.double)))
-      val map = transformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
-      map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
+    describe("withTransformer") {
+      val withTransformer = getter.withTransformer(v => FieldTuple.toTuple3OfSomes[Int,String,Double]((v.int, v.string, v.double)))
+
+      it("must be supported") {
+        val map = withTransformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+        map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
+      }
+
+      describe("deepCollect") {
+        it("must only return each match once") {
+          withTransformer.deepCollect {
+            case f if f == intField => f
+          } must be (List(intField))
+        }
+
+        it("must match the field itself") {
+          withTransformer.deepCollect {
+            case f if f == withTransformer => f
+          } must be (List(withTransformer))
+        }
+
+        it("must match the getter") {
+          withTransformer.deepCollect {
+            case f if f == getter => f
+          } must be (List(getter))
+        }
+      }
     }
   }
 
   describe("transformer") {
-    case class IntStringDouble(int: Int, string: String, double: Double)
     val transformer = FieldTuple(intField, stringField, doubleField).transformer[IntStringDouble](v => (v.int, v.string, v.double))
 
     it("should use each inner field's transformer") {
