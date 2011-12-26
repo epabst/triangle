@@ -18,8 +18,8 @@ object Transformer {
   }
 
   /**
-   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
-   * @param S the Subject type to transform using the value
+   * PortableField] support for transforming a subject using a value if {{{subject}}} is of type S.
+   * Type S is the Subject type to transform using the value.
    */
   def apply[S <: AnyRef,T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
     new Transformer[T] with SubjectField {
@@ -34,10 +34,10 @@ object Transformer {
     }
 
   /**
-   * {@PortableField} support for transforming a subject using a value if {{{subject}}} is of type S.
+   * [[com.github.triangle.PortableField]] support for transforming a subject using a value if {{{subject}}} is of type S.
    * theTransform operates on a value directly, rather than on an Option.
    * The clearer is used when the value is None.
-   * @param S the Subject type to transform using the value
+   * Type S is the Subject type to transform using the value.
    * @param clearer a function or 'noSetterForEmpty'
    */
   def apply[S <: AnyRef,T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =

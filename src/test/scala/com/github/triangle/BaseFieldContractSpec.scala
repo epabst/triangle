@@ -18,14 +18,16 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
 
   object IntSetIdentityField extends Field(identityField[Set[Int]])
 
-  val baseFieldWithSetterUsingItems = toBaseField(default(100) + new TransformerUsingSetter[Int] with NoGetter[Int] {
+  val fieldWithSetterUsingItems = new TransformerUsingSetter[Int] with NoGetter[Int] {
     def setter = throw new UnsupportedOperationException
 
     override def setterUsingItems: PartialFunction[(AnyRef, List[AnyRef]), Option[Int] => Unit] = {
       case (integer: AtomicInteger, IntSetIdentityField(Some(integers))) => value =>
         integer.set(value.getOrElse(0) + integers.sum)
     }
-  })
+  }
+
+  val baseFieldWithSetterUsingItems = toBaseField(default(100) + fieldWithSetterUsingItems)
 
   describe("copy") {
     class MyEntity(var myString: String, var number: Int)

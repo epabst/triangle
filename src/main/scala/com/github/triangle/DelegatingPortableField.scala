@@ -34,3 +34,23 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T] {
   override def toString = delegate.toString
 }
+
+trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsingSetter[T] {
+  protected def delegate: PortableField[T]
+  protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
+
+  def getter = {
+    case subject if subjectGetter.isDefinedAt(subject) &&
+      delegate.getter.isDefinedAt(subjectGetter(subject)) => delegate.getter(subjectGetter(subject))
+  }
+
+  override def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
+    case subject if subjectGetter.isDefinedAt(subject) &&
+      delegate.setter.isDefinedAt(subjectGetter(subject)) => delegate.setter(subjectGetter(subject))
+  }
+
+  override def setterUsingItems = {
+    case (subject, items) if subjectGetter.isDefinedAt(subject) &&
+      delegate.setterUsingItems.isDefinedAt((subjectGetter(subject), items)) => delegate.setterUsingItems((subjectGetter(subject), items))
+  }
+}
