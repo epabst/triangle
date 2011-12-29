@@ -9,7 +9,7 @@ import mutable.Buffer
 import Converter._
 
 /**
- * A behavior specification for {@link PortableField}.
+ * A behavior specification for [[com.github.triangle.PortableField]].
  * @author Eric Pabst (epabst@gmail.com)
  * Date: 2/9/11
  * Time: 7:59 PM
@@ -185,11 +185,11 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
     }
 
-    describe("getterFromItem factory method") {
+    describe("GetterFromItem") {
       object StringIdentityField extends Field(identityField[String])
       object Tuple2IdentityField extends Field(identityField[(Int,Int)])
 
-      val field = getterFromItem[String] {
+      val field = GetterFromItem[String] {
         case StringIdentityField(Some(string)) && Tuple2IdentityField(Some((x,y))) => string+ x + y
       }
 

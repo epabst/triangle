@@ -1,9 +1,9 @@
 package com.github.triangle
 
 /**
- * {@PortableField} support for getting a value as an Option if {{{subject}}} is of type S.
- * @param T the value type
- * @param S the Readable type to get the value out of
+ * [[com.github.triangle.PortableField]] support for getting a value as an Option if {{{subject}}} is of type S.
+ * T is the value type.
+ * S is the the Readable type to get the value out of.
  */
 abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
@@ -30,4 +30,13 @@ object Getter {
 
       override def toString = "getter[" + subjectManifest.erasure.getSimpleName + "]"
     }
+}
+
+/** Like Getter, but passes the list of items so that more than one of the Subjects can be used
+  * in getting the value.
+  */
+object GetterFromItem {
+  def apply[T](body: PartialFunction[List[_],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
+    override def getterFromItem = body
+  }
 }

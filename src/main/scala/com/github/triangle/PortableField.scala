@@ -237,14 +237,6 @@ object PortableField {
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
   implicit def toSome[T](value: T): Option[T] = Some(value)
 
-  /**
-    * Like getter, but passes the list of items so that more than one of the Subjects can be used
-    * in getting the value.
-    */
-  def getterFromItem[T](body: PartialFunction[List[_],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
-    override def getterFromItem = body
-  }
-
   /** Defines a read-only field for returning the subject item itself (as an Option). */
   def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) = new DelegatingPortableField[S] {
     val delegate = Getter[S,S](subject => Some(subject))
