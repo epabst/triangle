@@ -8,12 +8,9 @@ import collection.{immutable, mutable}
 import mutable.Buffer
 import Converter._
 
-/**
- * A behavior specification for [[com.github.triangle.PortableField]].
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 2/9/11
- * Time: 7:59 PM
- */
+/** A behavior specification for [[com.github.triangle.PortableField]].
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {

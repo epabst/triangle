@@ -1,10 +1,9 @@
 package com.github.triangle
 
-/**
- * [[com.github.triangle.PortableField]] support for getting a value as an Option if {{{subject}}} is of type S.
- * T is the value type.
- * S is the the Readable type to get the value out of.
- */
+/** [[com.github.triangle.PortableField]] support for getting a value as an Option if {{{subject}}} is of type S.
+  * T is the value type.
+  * S is the the Readable type to get the value out of.
+  */
 abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]

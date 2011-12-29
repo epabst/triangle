@@ -16,11 +16,10 @@ trait SetterUsingItems[T] extends Setter[T] {
   }
 }
 
-/**
- * {@PortableField} support for setting a value if {{{subject}}} is of type S.
- * This is a trait so that it can be mixed with FieldGetter.
- * @param S the Writable type to put the value into
- */
+/** [[com.github.triangle.PortableField]] support for setting a value if {{{subject}}} is of type S.
+  * This is a trait so that it can be mixed with FieldGetter.
+  * S is the Writable type to put the value into
+  */
 trait FieldSetter[S <: AnyRef,T] extends SetterUsingItems[T] with FieldWithSubject[S,T] with TransformerUsingSetter[T] with Logging {
   def subjectManifest: ClassManifest[S]
 
@@ -50,12 +49,11 @@ object Setter {
     }
   }
 
-  /**
-   * Defines a setter field for a Writable type, with separate functions for Some and None.
-   * The body operates on a value directly, rather than on an Option.
-   * The clearer is used when the value is None.
-   * @param clearer a function or 'noSetterForEmpty'
-   */
+  /** Defines a setter field for a Writable type, with separate functions for Some and None.
+    * The body operates on a value directly, rather than on an Option.
+    * The clearer is used when the value is None.
+    * @param clearer a function or 'noSetterForEmpty'
+    */
   def apply[S <: AnyRef,T](body: S => T => Unit, clearer: S => Unit)
                           (implicit subjectManifest: ClassManifest[S]): FieldSetter[S,T] =
     apply[S,T](fromDirect(body, clearer))

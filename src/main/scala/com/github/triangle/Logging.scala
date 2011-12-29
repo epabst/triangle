@@ -2,12 +2,9 @@ package com.github.triangle
 
 import org.slf4j.LoggerFactory
 
-/**
- * A trait to enable logging
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 2/2/11
- * Time: 6:54 AM
- */
+/** A trait to enable logging
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 trait Logging {
   protected def logTag: String

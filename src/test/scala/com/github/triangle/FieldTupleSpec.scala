@@ -7,12 +7,9 @@ import org.scalatest.Spec
 import PortableField._
 import scala.collection.mutable
 
-/**
- * A behavior specification for [[com.github.triangle.FieldTuple]].
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 4/20/11
- * Time: 1:39 PM
- */
+/** A behavior specification for [[com.github.triangle.FieldTuple]].
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 @RunWith(classOf[JUnitRunner])
 class FieldTupleSpec extends Spec with MustMatchers {

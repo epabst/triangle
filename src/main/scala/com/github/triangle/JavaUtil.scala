@@ -2,12 +2,9 @@ package com.github.triangle
 
 import java.util.HashMap
 
-/**
- * A utility for converting between Scala and Java.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 3/7/11
- * Time: 6:56 AM
- */
+/** A utility for converting between Scala and Java.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 object JavaUtil {
   def toJavaMap[K,V](map: Map[K,Option[V]]): java.util.Map[K,V] = {

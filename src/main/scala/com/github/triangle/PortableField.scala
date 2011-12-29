@@ -2,30 +2,27 @@ package com.github.triangle
 
 import collection.mutable
 
-/**
- * A portable field of a specific type which applies to Cursors, Views, Model objects, etc.
- * Example:
- * {{{
- * import com.github.triangle.PortableField._
- * import com.github.scala.android.crud.persistence.CursorField._
- * import com.github.scala.android.crud.persistence.PersistedType._
- * import com.github.scala.android.crud.view.ViewField._
- *
- * val fields = List(
- *   persisted[String]("name") + viewId(R.id.name, textView),
- *   persisted[Double]("score") + viewId(R.id.score, formatted[Double](textView))
- * )
- * }}}
- * Usage of implicits and defaults make this syntax concise for the simple cases,
- * but allow for very complex situations as well by providing explicit values when needed.
- * @param T the value type that this PortableField gets and sets.
- * @see #getter
- * @see #setter
- */
+/** A portable field of a specific type which applies to Cursors, Views, Model objects, etc.
+  * Example:
+  * {{{
+  * import com.github.triangle.PortableField._
+  * import com.github.scala.android.crud.persistence.CursorField._
+  * import com.github.scala.android.crud.persistence.PersistedType._
+  * import com.github.scala.android.crud.view.ViewField._
+  *
+  * val fields = List(
+  *   persisted[String]("name") + viewId(R.id.name, textView),
+  *   persisted[Double]("score") + viewId(R.id.score, formatted[Double](textView))
+  * )
+  * }}}
+  * Usage of implicits and defaults make this syntax concise for the simple cases,
+  * but allow for very complex situations as well by providing explicit values when needed.
+  * T is the value type that this PortableField gets and sets.
+  * @see #getter
+  * @see #setter
+  */
 trait PortableField[T] extends BaseField with Logging { self =>
-  /**
-   * PartialFunction for getting an optional value from an AnyRef.
-   */
+  /** PartialFunction for getting an optional value from an AnyRef. */
   def getter: PartialFunction[AnyRef,Option[T]]
 
   /** extractor for finding the applicable items, if any. */
@@ -36,50 +33,43 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  /**
-   * PartialFunction for getting an optional value from the first AnyRef in the List that has Some value.
-   * If none of them has Some value, then it will return None if at least one of them applies.
-   * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
-   */
+  /** PartialFunction for getting an optional value from the first AnyRef in the List that has Some value.
+    * If none of them has Some value, then it will return None if at least one of them applies.
+    * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
+    */
   def getterFromItem: PartialFunction[List[_],Option[T]] = {
     case ApplicableItems(items) => items.view.map(getter(_)).find(_.isDefined).getOrElse(None)
   }
 
-  /**
-   * Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
-   * @see #getter
-   * @return the value
-   * @throws NoSuchElementException if the value was None
-   * @throws MatchError if subject is not an applicable type
-   */
+  /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
+    * @see [[com.github.triangle.PortableField.getter]]
+    * @return the value
+    * @throws NoSuchElementException if the value was None
+    * @throws MatchError if subject is not an applicable type
+    */
   def apply(subject: AnyRef): T = getter(subject).get
 
-  /**
-   * An extractor that matches the value as an Option.
-   * Example: {{{case MyField(Some(string)) => ...}}}
-   */
+  /** An extractor that matches the value as an Option.
+    * Example: {{{case MyField(Some(string)) => ...}}}
+    */
   def unapply(subject: AnyRef): Option[Option[T]] = subject match {
     case x if getter.isDefinedAt(x) => Some(getter(x))
     case items: List[_] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
     case _ => None
   }
 
-  /**
-   * PartialFunction for setting an optional value in an AnyRef.
-   */
+  /** PartialFunction for setting an optional value in an AnyRef. */
   def setter: PartialFunction[AnyRef,Option[T] => Unit]
 
-  /** A setter that also has access to some items such as context that may be helpful when setting.
-    */
+  /** A setter that also has access to some items such as context that may be helpful when setting. */
   def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit] = {
     case (subject, _) if setter.isDefinedAt(subject) => v => setter(subject)(v)
   }
 
-  /**
-   * Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
-   * @param items optional extra items usable by the setterUsingItems
-   * @return true if any were successful
-   */
+  /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
+    * @param items optional extra items usable by the setterUsingItems
+    * @return true if any were successful
+    */
   def setValue(subject: AnyRef, value: Option[T], items: List[AnyRef] = Nil): Boolean = {
     val defined = setterUsingItems.isDefinedAt(subject, items)
     if (defined) setterUsingItems(subject, items)(value)
@@ -87,19 +77,17 @@ trait PortableField[T] extends BaseField with Logging { self =>
     defined
   }
 
-  /**
-   * Transforms the {{{initial}}} subject using the {{{data}}} for this field..
-   * @return the transformed subject, which could be the initial instance
-   */
+  /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
+    * @return the transformed subject, which could be the initial instance
+    */
   def transformWithValue[S <: AnyRef](initial: S, value: Option[T]): S = transformer[S](initial)(value)
 
-  /**
-   * PartialFunction for transforming an AnyRef using an optional value.
-   * This delegates to {{{setter}}} for mutable objects.
-   * {{{transformer(foo)(value)}}} should return a transformed version of foo (which could be the same instance if mutable).
-   * Note: Implementations usually must specify the return type to compile properly
-   * @param a subject to be transformed, whether immutable or mutable
-   */
+  /** PartialFunction for transforming an AnyRef using an optional value.
+    * This delegates to {{{setter}}} for mutable objects.
+    * {{{transformer(foo)(value)}}} should return a transformed version of foo (which could be the same instance if mutable).
+    * Note: Implementations usually must specify the return type to compile properly
+    * The parameter is the subject to be transformed, whether immutable or mutable
+    */
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
 
   private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](get: PartialFunction[F,Option[T]], initial: S, data: F): S = {
@@ -165,9 +153,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  /**
-   * Adds two PortableField objects together.
-   */
+  /** Adds two PortableField objects together. */
   def +(other: PortableField[T]): PortableField[T] = {
     new PortableField[T] {
       override def toString = self + " + " + other
@@ -287,9 +273,7 @@ object PortableField {
 
   def formatted[T](format: ValueFormat[T], field: PortableField[String]) = new FormattedField(format, field)
 
-  /**
-   * formatted replacement for primitive values.
-   */
+  /** formatted replacement for primitive values. */
   def formatted[T <: AnyVal](field: PortableField[String])(implicit m: Manifest[T]): PortableField[T] =
     formatted(ValueFormat.basicFormat[T], field)
 }

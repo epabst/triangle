@@ -5,12 +5,9 @@ import scala.Enumeration
 import Converter._
 import java.text.{SimpleDateFormat, Format}
 
-/**
- * A value format.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 2/4/11
- * Time: 9:25 PM
- */
+/** A value String format.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 trait ValueFormat[T] {
   /** May need to be overridden */
   def toString(value: T): String = value.toString

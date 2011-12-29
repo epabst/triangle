@@ -2,13 +2,10 @@ package com.github.triangle
 
 import scala.AnyRef
 
-/**
- * A Tuple of Fields.
- * Use the right subtype for the correct -arity such as FieldTuple3.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 5/20/11
- * Time: 9:50 AM
- */
+/** A Tuple of Fields.
+  * Use the right subtype for the correct -arity such as FieldTuple3.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 trait FieldTuple extends TypedProduct[PortableField[_]] {
   /** a type which is a Tuple for the field values such as (Option[A], Option[B], Option[C]). */
   type ValuesTuple <: Product

@@ -8,12 +8,9 @@ import java.text.NumberFormat
 import ValueFormat._
 import java.util.{Calendar, GregorianCalendar}
 
-/**
- * A behavior specification for {@link ValueFormat}.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 2/9/11
- * Time: 7:59 PM
- */
+/** A behavior specification for [[com.github.triangle.ValueFormat]].
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 @RunWith(classOf[JUnitRunner])
 class ValueFormatSpec extends Spec with MustMatchers {

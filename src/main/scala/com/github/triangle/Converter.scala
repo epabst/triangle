@@ -3,17 +3,12 @@ package com.github.triangle
 import java.text.{DateFormat, Format, ParsePosition, NumberFormat}
 import java.util.{Calendar, Date}
 
-/**
- * A converter from one type to another.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 9/15/11
- * Time: 7:40 PM
- */
+/** A converter from one type to another.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 trait GenericConverter[-A,-B] {
-  /**
-   * Converts from {{{from}}} to the new type if possible.
-   */
+  /** Converts from {{{from}}} to the new type if possible. */
   def convertTo[T <: B](from: A)(implicit manifest: Manifest[T]): Option[T]
 }
 
@@ -26,9 +21,7 @@ protected abstract class SimpleGenericConverter[-A,-B] extends GenericConverter[
 }
 
 trait Converter[-A,B] extends GenericConverter[A,B] {
-  /**
-   * Converts from {{{from}}} to the new type if possible.
-   */
+  /** Converts from {{{from}}} to the new type if possible. */
   def convert(from: A): Option[B]
 
   def convertTo[T <: B](from: A)(implicit manifest: Manifest[T]) = convert(from).map(_.asInstanceOf[T])

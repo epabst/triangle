@@ -17,10 +17,9 @@ object Transformer {
     }
   }
 
-  /**
-   * PortableField] support for transforming a subject using a value if {{{subject}}} is of type S.
-   * Type S is the Subject type to transform using the value.
-   */
+  /** PortableField] support for transforming a subject using a value if {{{subject}}} is of type S.
+    * Type S is the Subject type to transform using the value.
+    */
   def apply[S <: AnyRef,T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
     new Transformer[T] with SubjectField {
       def transformer[S1]: PartialFunction[S1,Option[T] => S1] = {
@@ -33,13 +32,12 @@ object Transformer {
       override def toString = "transformer[" + subjectManifest.erasure.getSimpleName + "]"
     }
 
-  /**
-   * [[com.github.triangle.PortableField]] support for transforming a subject using a value if {{{subject}}} is of type S.
-   * theTransform operates on a value directly, rather than on an Option.
-   * The clearer is used when the value is None.
-   * Type S is the Subject type to transform using the value.
-   * @param clearer a function or 'noSetterForEmpty'
-   */
+  /** [[com.github.triangle.PortableField]] support for transforming a subject using a value if {{{subject}}} is of type S.
+    * theTransform operates on a value directly, rather than on an Option.
+    * The clearer is used when the value is None.
+    * Type S is the Subject type to transform using the value.
+    * @param clearer a function or 'noSetterForEmpty'
+    */
   def apply[S <: AnyRef,T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
     Transformer((subject: S) => { (valueOpt: Option[T]) =>
       valueOpt match {

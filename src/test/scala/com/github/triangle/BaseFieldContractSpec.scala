@@ -8,10 +8,9 @@ import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import collection.mutable
 
-/**
- * A Specification for all types of BaseField.
- * @author Eric Pabst (epabst@gmail.com)
- */
+/** A Specification for all types of BaseField.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 @RunWith(classOf[JUnitRunner])
 abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   def toBaseField[T](field: PortableField[T]): BaseField

@@ -8,12 +8,9 @@ import Converter._
 import java.util.{Calendar, GregorianCalendar, Date}
 import java.text.DateFormat
 
-/**
- * A behavior specification for {@link Converter}.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 9/15/11
- * Time: 7:59 PM
- */
+/** A behavior specification for [[com.github.triangle.Converter]].
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 @RunWith(classOf[JUnitRunner])
 class ConverterSpec extends Spec with MustMatchers {

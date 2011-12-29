@@ -2,14 +2,11 @@ package com.github.triangle
 
 import scala.collection._
 
-/**
- * A trait that has a list of Fields.  The only requirement is that {{{fields}}} be defined.
- * It has helpful methods that can operate on them.
- * It implements BaseField in order to use copy methods that return a PortableValue which represents a composite value.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 4/21/11
- * Time: 1:36 AM
- */
+/** A trait that has a list of Fields.  The only requirement is that {{{fields}}} be defined.
+  * It has helpful methods that can operate on them.
+  * It implements BaseField in order to use copy methods that return a PortableValue which represents a composite value.
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 trait FieldList extends Traversable[BaseField] with BaseField {
 
   protected def fields: Traversable[BaseField]

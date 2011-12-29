@@ -6,12 +6,9 @@ import PortableField._
 import scala.collection._
 
 
-/**
- * A behavior specification for {@link FieldList}.
- * @author Eric Pabst (epabst@gmail.com)
- * Date: 4/21/11
- * Time: 1:39 AM
- */
+/** A behavior specification for [[com.github.triangle.FieldList]].
+  * @author Eric Pabst (epabst@gmail.com)
+  */
 
 @RunWith(classOf[JUnitRunner])
 class FieldListSpec extends BaseFieldContractSpec {
