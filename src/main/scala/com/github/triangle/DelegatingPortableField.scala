@@ -40,6 +40,11 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsi
       delegate.getter.isDefinedAt(subjectGetter(subject)) => delegate.getter(subjectGetter(subject))
   }
 
+  override def getterFromItem = {
+    case items: List[_] if delegate.getterFromItem.isDefinedAt(items.map(_.asInstanceOf[AnyRef]).collect(subjectGetter)) =>
+      delegate.getterFromItem(items.map(_.asInstanceOf[AnyRef]).collect(subjectGetter))
+  }
+
   override def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
     case subject if subjectGetter.isDefinedAt(subject) &&
       delegate.setter.isDefinedAt(subjectGetter(subject)) => delegate.setter(subjectGetter(subject))

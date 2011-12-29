@@ -15,6 +15,7 @@ import collection.mutable
 abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   def toBaseField[T](field: PortableField[T]): BaseField
 
+  object StringIdentityField extends Field(identityField[String])
   object IntSetIdentityField extends Field(identityField[Set[Int]])
 
   val fieldWithSetterUsingItems = new TransformerUsingSetter[Int] with NoGetter[Int] {
