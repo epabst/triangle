@@ -166,8 +166,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
       }
 
       override def getterFromItem = {
-        case x if self.getterFromItem.isDefinedAt(x) || other.getterFromItem.isDefinedAt(x) => {
-          val values = List(self, other).view.map(_.getterFromItem).filter(_.isDefinedAt(x)).map(_(x))
+        case items if self.getterFromItem.isDefinedAt(items) || other.getterFromItem.isDefinedAt(items) => {
+          val values = List(self, other).view.map(_.getterFromItem).filter(_.isDefinedAt(items)).map(_(items))
           values.find(_.isDefined).getOrElse(None)
         }
       }
