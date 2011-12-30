@@ -18,6 +18,10 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   object StringIdentityField extends Field(identityField[String])
   object IntSetIdentityField extends Field(identityField[Set[Int]])
 
+  val fieldWithGetterFromItem = GetterFromItem[String] {
+    case StringIdentityField(Some(string)) && IntSetIdentityField(Some(set)) => Some(string + set.sum)
+  }
+
   val fieldWithSetterUsingItems = new TransformerUsingSetter[Int] with NoGetter[Int] {
     def setter = throw new UnsupportedOperationException
 
@@ -86,6 +90,13 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   }
 
   describe("copyFromItem") {
+    it("must preserve semantics of getterFromItem on delegate") {
+      val field = toBaseField[String](fieldWithGetterFromItem + mapField("string"))
+      val map = mutable.Map.empty[String, Any]
+      field.copyFromItem(List("hello", "ignored", Set(1,0,3)), map)
+      map.get("string") must be (Some("hello4"))
+    }
+
     it("must have the new value and the original items available for the setter to use") {
       val integer = new AtomicInteger(30)
       baseFieldWithSetterUsingItems.copyFromItem(List(PortableField.UseDefaults, Set(1,0,3)), integer)

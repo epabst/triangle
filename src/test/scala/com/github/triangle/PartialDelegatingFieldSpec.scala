@@ -61,9 +61,6 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
   }
 
   it("must unwrap the AnyRef for getterFromItem") {
-    val fieldWithGetterFromItem = GetterFromItem[String] {
-      case StringIdentityField(Some(string)) && IntSetIdentityField(Some(set)) => Some(string + set.sum)
-    }
     val field = new PartialDelegatingField[String] {
       protected def delegate = fieldWithGetterFromItem
 

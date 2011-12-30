@@ -17,6 +17,8 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 
   def getter = delegate.getter
 
+  override def getterFromItem = delegate.getterFromItem
+
   def setter = delegate.setter
 
   override def setterUsingItems = delegate.setterUsingItems
