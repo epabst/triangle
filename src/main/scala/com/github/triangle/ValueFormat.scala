@@ -9,35 +9,45 @@ import java.text.{SimpleDateFormat, Format}
   * @author Eric Pabst (epabst@gmail.com)
   */
 trait ValueFormat[T] {
+  def toValue(s: String): Option[T]
+
   /** May need to be overridden */
   def toString(value: T): String = value.toString
-
-  def toValue(s: String): Option[T]
 }
 
 class ConvertingValueFormat[T](toValueConverter: Converter[String,T],
                                toStringConverter: Converter[T,String] = anyToString) extends ValueFormat[T] {
-  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
-
   def toValue(s: String) = toValueConverter.convert(s)
+
+  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
 }
 
 class GenericConvertingValueFormat[T](toValueConverter: GenericConverter[String,T],
                                       toStringConverter: Converter[T, String] = anyToString)(implicit manifest: Manifest[T])
         extends ValueFormat[T] {
-  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
-
   def toValue(s: String) = toValueConverter.convertTo[T](s)
+
+  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
 }
 
 object ValueFormat {
+  def apply[T](toValue: String => Option[T], toString: T => String) = {
+    val _toValue = toValue
+    val _toString = toString
+    new ValueFormat[T] {
+      def toValue(s: String) = _toValue(s)
+
+      override def toString(value: T) = _toString(value)
+    }
+  }
+
   def convertingFormat[T](toValueConverter: Converter[String,T], toStringConverter: Converter[T,String] = anyToString) =
     new ConvertingValueFormat[T](toValueConverter, toStringConverter)
 
   def toCalendarFormat(format: ValueFormat[Date]): ValueFormat[Calendar] = new ValueFormat[Calendar] {
-    override def toString(value: Calendar) = format.toString(calendarToDate.convert(value).get)
-
     def toValue(s: String) = format.toValue(s).map(dateToCalendar.convert(_).get)
+
+    override def toString(value: Calendar) = format.toString(calendarToDate.convert(value).get)
   }
 
   def textValueFormat[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}): ValueFormat[T] =
