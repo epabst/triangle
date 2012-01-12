@@ -3,14 +3,12 @@ package com.github.triangle
 import java.text.{DateFormat, Format, ParsePosition, NumberFormat}
 import java.util.{Calendar, Date}
 
-trait Converter[-A,B] extends GenericConverter[A,B] {
+trait Converter[-A,+B] {
   /** Converts from {{{from}}} to the new type if possible. */
   def convert(from: A): Option[B]
-
-  def convertTo[T <: B](from: A)(implicit manifest: Manifest[T]) = convert(from).map(_.asInstanceOf[T])
 }
 
-abstract class SimpleConverter[-A,B] extends Converter[A,B] {
+abstract class SimpleConverter[-A,+B] extends Converter[A,B] {
   protected def attemptConvert(from: A): B
 
   def convert(from: A) = try { Some(attemptConvert(from)) } catch { case e: IllegalArgumentException => None }
@@ -24,30 +22,21 @@ class ParseFormatConverter[T](format: Format, obj2Value: (Object) => T = {(v: Ob
   }
 }
 
-
-class CompositeDirectConverter[-A,B](converters: List[Converter[A,B]]) extends Converter[A,B] {
+class CompositeDirectConverter[-A,+B](converters: List[Converter[A,B]]) extends Converter[A,B] {
   def convert(from: A) = converters.view.flatMap(_.convert(from)).headOption
 }
 
 object Converter {
+  implicit def apply[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
+    def convert(from: A) = f(from)
+  }
+
   val anyToString: Converter[Any,String] = new Converter[Any,String] {
     def convert(from: Any) = Some(from.toString)
   }
 
-  val stringToAnyVal: GenericConverter[String,AnyVal] = new SimpleGenericConverter[String,AnyVal] {
-    def attemptConvertTo[T <: AnyVal](from: String)(implicit manifest: Manifest[T]): T = {
-      manifest.erasure match {
-        case x: Class[_] if (x == classOf[Int]) => from.toInt.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Long]) => from.toLong.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Short]) => from.toShort.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Byte]) => from.toByte.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Double]) => from.toDouble.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Float]) => from.toFloat.asInstanceOf[T]
-        case x: Class[_] if (x == classOf[Boolean]) => from.toBoolean.asInstanceOf[T]
-        case _ => throw new IllegalArgumentException("Unknown primitive type: " + classManifest.erasure +
-                " with value " + from)
-      }
-    }
+  val noConverter: Converter[Any,Nothing] = new Converter[Any,Nothing] {
+    def convert(from: Any) = None
   }
 
   private lazy val currencyFormat = NumberFormat.getCurrencyInstance
@@ -62,10 +51,6 @@ object Converter {
     List(currencyEditFormat, currencyFormat, NumberFormat.getNumberInstance).map(
       new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
   )
-
-  def apply[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
-    def convert(from: A) = f(from)
-  }
 
   lazy val dateToLong = Converter[Date, Long](d => Some(d.getTime))
   lazy val longToDate = Converter[Long, Date](l => Some(new Date(l)))

@@ -228,7 +228,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("converted") {
       it("must convert values in both directions") {
-        val field: PortableField[Double] = converted(currencyToEditString, stringToCurrency, mapField[String]("amountString"))
+        val field: PortableField[Double] = converted(currencyToEditString, mapField[String]("amountString"), stringToCurrency)
         field(Map("amountString" -> "12.34")) must be (12.34)
 
         val map = mutable.Map[String,Any]()
@@ -237,7 +237,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
 
       it("must have a working transformer") {
-        val field = converted(currencyToString, stringToCurrency, mapField[String]("amountString"))
+        val field = converted(currencyToString, mapField[String]("amountString"), stringToCurrency)
         //qualified to point out that it's immutable
         val result: Map[String,Double] = field.transformer[immutable.Map[String,Double]](immutable.Map.empty)(4.0)
         result.get("amountString") must be (Some("$4.00"))

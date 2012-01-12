@@ -264,7 +264,7 @@ object PortableField {
   def adjustment[S <: AnyRef](adjuster: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
     default[Unit](Unit) + Transformer((s: S) => (u: Option[Unit]) => adjuster(s))
 
-  def converted[A,B](converter1: Converter[A,B], converter2: Converter[B,A], field: PortableField[B]): PortableField[A] =
+  def converted[A,B](converter1: Converter[A,B], field: PortableField[B], converter2: Converter[B,A]): PortableField[A] =
     new ConvertedField[A,B](field) {
       def convert(value: B) = converter2.convert(value)
 

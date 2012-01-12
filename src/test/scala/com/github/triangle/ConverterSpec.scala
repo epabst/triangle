@@ -5,6 +5,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 import Converter._
+import GenericConverter._
 import java.util.{Calendar, GregorianCalendar, Date}
 import java.text.DateFormat
 
@@ -17,14 +18,14 @@ class ConverterSpec extends Spec with MustMatchers {
   describe("anyToString") {
     it("must use the Object.toString method") {
       val from = new Object
-      anyToString.convertTo(from) must be (Some(from.toString))
+      anyToString.convert(from) must be (Some(from.toString))
     }
 
     it("must work for primitive types") {
-      anyToString.convertTo(1) must be (Some("1"))
-      anyToString.convertTo(1.5) must be (Some("1.5"))
-      anyToString.convertTo(true) must be (Some("true"))
-      anyToString.convertTo('a') must be (Some("a"))
+      anyToString.convert(1) must be (Some("1"))
+      anyToString.convert(1.5) must be (Some("1.5"))
+      anyToString.convert(true) must be (Some("true"))
+      anyToString.convert('a') must be (Some("a"))
     }
   }
 

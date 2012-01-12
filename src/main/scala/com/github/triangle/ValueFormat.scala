@@ -3,6 +3,7 @@ package com.github.triangle
 import java.util.{Calendar, Date}
 import scala.Enumeration
 import Converter._
+import GenericConverter._
 import java.text.{SimpleDateFormat, Format}
 
 /** A value String format.
