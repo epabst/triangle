@@ -33,12 +33,18 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
+  private def get(readable: AnyRef): Option[T] = {
+    val result = getter(readable)
+    require(result != null, this + "'s getter is non-functional.  It should never return a null.")
+    result
+  }
+
   /** PartialFunction for getting an optional value from the first AnyRef in the List that has Some value.
     * If none of them has Some value, then it will return None if at least one of them applies.
     * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
     */
   def getterFromItem: PartialFunction[List[_],Option[T]] = {
-    case ApplicableItems(items) => items.view.map(getter(_)).find(_.isDefined).getOrElse(None)
+    case ApplicableItems(items) => items.view.map(get(_)).find(_.isDefined).getOrElse(None)
   }
 
   /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
@@ -47,13 +53,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * @throws NoSuchElementException if the value was None
     * @throws MatchError if subject is not an applicable type
     */
-  def apply(subject: AnyRef): T = getter(subject).get
+  def apply(subject: AnyRef): T = get(subject).get
 
   /** An extractor that matches the value as an Option.
     * Example: {{{case MyField(Some(string)) => ...}}}
     */
   def unapply(subject: AnyRef): Option[Option[T]] = subject match {
-    case x if getter.isDefinedAt(x) => Some(getter(x))
+    case x if getter.isDefinedAt(x) => Some(get(x))
     case items: List[_] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
     case _ => None
   }
@@ -160,7 +166,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
       def getter = {
         case x if self.getter.isDefinedAt(x) || other.getter.isDefinedAt(x) => {
-          val values = List(self, other).view.map(_.getter).filter(_.isDefinedAt(x)).map(_(x))
+          val values = List(self, other).view.collect {
+            case field if field.getter.isDefinedAt(x) => field.get(x)
+          }
           values.find(_.isDefined).getOrElse(None)
         }
       }
