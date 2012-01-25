@@ -82,13 +82,22 @@ class FieldListSpec extends BaseFieldContractSpec {
   }
 
   describe("copyableTo") {
-    it("must only return fields that can transform the given subject with the given contextItems") {
+    it("must only return fields that can transform the given subject") {
       val countField = mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val adjustmentField = adjustment[StringBuffer](_.append(" and more"))
       val fields = FieldList(countField, adjustmentField, priceField)
-      fields.copyableTo(Map.empty[String,Any]).toString must be (FieldList(countField, priceField).toString)
-      fields.copyableTo(new StringBuffer).toString must be (FieldList(adjustmentField).toString)
+      fields.copyableTo(Map.empty[String,Any]).toString must be (FieldList(countField, priceField).toString())
+      fields.copyableTo(new StringBuffer).toString must be (FieldList(adjustmentField).toString())
+    }
+
+    it("must only return fields that can transform the given subject with the given contextItems") {
+      val appendField = SetterUsingItems[String] {
+        case (sb: StringBuffer, List(suffix: String)) => v => sb.append(v.getOrElse("none")).append(suffix)
+      }
+      val priceField = mapField[Double]("price")
+      val fields = FieldList(appendField, priceField)
+      fields.copyableTo(new StringBuffer, List("suffix")).toString must be (FieldList(appendField).toString())
     }
   }
 }
