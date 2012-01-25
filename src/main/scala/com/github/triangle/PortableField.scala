@@ -159,7 +159,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
       def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
         debug("About to " + transform_with_forField_message(initial, "value " + value, self))
-        transformerUsingItems[S](initial, contextItems)(value)
+        if (transformerUsingItems.isDefinedAt((initial, contextItems))) {
+          transformerUsingItems[S](initial, contextItems)(value)
+        } else {
+          initial
+        }
       }
 
       def get[T2](field: PortableField[T2]): Option[T2] = if (self == field) value.asInstanceOf[Option[T2]] else None

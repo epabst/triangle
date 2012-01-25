@@ -114,6 +114,12 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
       val integer = baseFieldWithSetterUsingItems.transform(new AtomicInteger(30), Set(1,0,3))
       integer.get() must be (4)
     }
+
+    it("must not fail if the transformer isDefinedAt is false when using a PortableValue") {
+      val portableValue = baseFieldWithSetterUsingItems.copyFrom(Set(1,0,3))
+      val subject = new Object
+      portableValue.transform(subject) must be (subject)
+    }
   }
 
   describe("transformWithItem") {
