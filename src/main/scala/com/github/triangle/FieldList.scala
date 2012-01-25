@@ -32,6 +32,11 @@ trait FieldList extends Traversable[BaseField] with BaseField {
     }
   }
 
+  /** Narrows the FieldList to fields whose transformer isDefinedAt the given subject. */
+  def copyableTo(subject: AnyRef): FieldList = deepCollect {
+    case (field: PortableField[_]) if field.transformer.isDefinedAt(subject) => field
+  }
+
   def transform[S <: AnyRef](initial: S, data: AnyRef): S = {
     fields.foldLeft(initial)((subject, field) => field.transform(subject, data))
   }

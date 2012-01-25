@@ -80,4 +80,15 @@ class FieldListSpec extends BaseFieldContractSpec {
       result must be (immutable.Map[String,Any]("count" -> 12, "price" -> 100.0))
     }
   }
+
+  describe("copyableTo") {
+    it("must only return fields that can transform the given subject with the given contextItems") {
+      val countField = mapField[Int]("count")
+      val priceField = mapField[Double]("price")
+      val adjustmentField = adjustment[StringBuffer](_.append(" and more"))
+      val fields = FieldList(countField, adjustmentField, priceField)
+      fields.copyableTo(Map.empty[String,Any]).toString must be (FieldList(countField, priceField).toString)
+      fields.copyableTo(new StringBuffer).toString must be (FieldList(adjustmentField).toString)
+    }
+  }
 }
