@@ -4,6 +4,12 @@ trait TransformerUsingSetter[T] extends PortableField[T] {
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
     case subject if setter.isDefinedAt(subject) => { value => setter(subject).apply(value); subject }
   }
+
+  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+    case subjectAndItems if setterUsingItems.isDefinedAt(subjectAndItems) => { value =>
+      setterUsingItems(subjectAndItems).apply(value); subjectAndItems._1
+    }
+  }
 }
 
 trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]

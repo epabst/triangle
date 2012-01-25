@@ -13,16 +13,17 @@ trait FieldList extends Traversable[BaseField] with BaseField {
 
   def foreach[U](f: (BaseField) => U) { fields.foreach(f) }
 
-  def copyFrom(from: AnyRef) = copyFromUsingCopyMethod(_.copyFrom, from)
+  def copyFrom(from: AnyRef) = copyFromUsingCopyMethod[AnyRef](f => f.copyFrom(_), from)
 
-  def copyFromItem(fromItems: List[AnyRef]) = copyFromUsingCopyMethod(_.copyFromItem, fromItems)
+  def copyFromItem(fromItems: List[AnyRef]) = copyFromUsingCopyMethod[List[AnyRef]](f => f.copyFromItem(_), fromItems)
 
   private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue = {
     val portableValues = fields.map(f => baseFieldCopyMethod(f)(from))
     new PortableValue {
       def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) { portableValues.foreach(_.copyTo(to, contextItems)) }
 
-      def transform[S <: AnyRef](initial: S): S = {
+      def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
+        //todo include ", contextItems"
         portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject))
       }
 

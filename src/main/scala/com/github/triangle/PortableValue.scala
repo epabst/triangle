@@ -10,9 +10,10 @@ trait PortableValue {
   def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil)
 
   /** Transforms the {{{initial}}} subject using this value.
+    * @param contextItems a List of items that may be used by PortableField.transformerUsingItems.
     * @return the transformed subject, which could be the initial instance
     */
-  def transform[S <: AnyRef](initial: S): S
+  def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S
 
   /** Returns the value contained in this value for the given PortableField. */
   def get[T](field: PortableField[T]): Option[T]

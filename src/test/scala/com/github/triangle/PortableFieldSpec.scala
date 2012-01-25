@@ -4,8 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import PortableField._
 import org.scalatest.mock.EasyMockSugar
-import collection.{immutable, mutable}
-import mutable.Buffer
+import collection.mutable
 import Converter._
 
 /** A behavior specification for [[com.github.triangle.PortableField]].
@@ -70,8 +69,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("adjustmentInPlace") {
       it("must always happen when copying from Unit and it's the right kind of subject") {
-        val adjust = adjustmentInPlace[collection.mutable.Buffer[String]] { _.append("world") }
-        val buffer = collection.mutable.Buffer[String]("hello")
+        val adjust = adjustmentInPlace[mutable.Buffer[String]] { _.append("world") }
+        val buffer = mutable.Buffer[String]("hello")
         adjust.copy(PortableField.UseDefaults, buffer)
         buffer.toList must equal(List("hello", "world"))
       }
@@ -100,13 +99,13 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         map.toMap must be (Map.empty[String,String])
       }
 
-      it("must unwrap a Some when putting it into an immutable.Map") {
+      it("must unwrap a Some when putting it into a Map") {
         val stringField = mapField[String]("greeting")
         val result = stringField.transformer[Map[String, String]](Map.empty)(Some("Hello"))
         result must be (Map("greeting" -> "Hello"))
       }
 
-      it("must not add to an immutable.Map if value is None") {
+      it("must not add to a Map if value is None") {
         val stringField = mapField[String]("greeting")
         val result = stringField.transform(Map.empty[String,String], None)
         result must be (Map.empty[String,String])
@@ -171,14 +170,14 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("getterFromItem instance method") {
       it("must get from the first applicable item with Some value") {
         val fieldWithDefault = default(12) + mapField[Int]("count")
-        fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any], PortableField.UseDefaults)) must be (Some(12))
-        fieldWithDefault.getterFromItem(List(immutable.Map.empty[String,Any])) must be (None)
+        fieldWithDefault.getterFromItem(List(Map.empty[String,Any], PortableField.UseDefaults)) must be (Some(12))
+        fieldWithDefault.getterFromItem(List(Map.empty[String,Any])) must be (None)
 
         val fieldWithoutDefault = mapField[Int]("count")
-        fieldWithoutDefault.getterFromItem(List(immutable.Map.empty[String,Any], PortableField.UseDefaults)) must be (None)
+        fieldWithoutDefault.getterFromItem(List(Map.empty[String,Any], PortableField.UseDefaults)) must be (None)
 
         val fieldWithDeprecatedName = mapField[Int]("count") + mapField[Int]("size")
-        fieldWithDeprecatedName.getterFromItem(List(immutable.Map[String,Any]("size" -> 4))) must be (Some(4))
+        fieldWithDeprecatedName.getterFromItem(List(Map[String,Any]("size" -> 4))) must be (Some(4))
       }
     }
 
@@ -201,8 +200,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("setter") {
       it("must call clearer if no value") {
-        val stringField = Setter({ (b: Buffer[String]) => (v: String) => b += v; Unit }, (b: Buffer[String]) => b.clear())
-        val buffer = Buffer("hello")
+        val stringField = Setter({ (b: mutable.Buffer[String]) => (v: String) => b += v; Unit }, (b: mutable.Buffer[String]) => b.clear())
+        val buffer = mutable.Buffer("hello")
         stringField.setValue(buffer, None)
         buffer must be ('empty)
       }
@@ -221,7 +220,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must have a working transformer") {
         val formattedField = formatted[Int](mapField[String]("countString"))
         //qualified to point out that it's immutable
-        val result: Map[String,Int] = formattedField.transformer[immutable.Map[String,Int]](immutable.Map.empty)(4)
+        val result: Map[String,Int] = formattedField.transformer[Map[String,Int]](Map.empty)(4)
         result.get("countString") must be (Some("4"))
       }
     }
@@ -239,7 +238,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must have a working transformer") {
         val field = converted(currencyToString, mapField[String]("amountString"), stringToCurrency)
         //qualified to point out that it's immutable
-        val result: Map[String,Double] = field.transformer[immutable.Map[String,Double]](immutable.Map.empty)(4.0)
+        val result: Map[String,Double] = field.transformer[Map[String,Double]](Map.empty)(4.0)
         result.get("amountString") must be (Some("$4.00"))
       }
     }
@@ -257,7 +256,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         val stringField = mapField[String]("greeting")
         val intField = mapField[Int]("count")
         //qualified to point out that it's immutable
-        val result: Map[String,Any] = stringField.transformer[immutable.Map[String,Any]](immutable.Map.empty)(Some("hello"))
+        val result: Map[String,Any] = stringField.transformer[Map[String,Any]](Map.empty)(Some("hello"))
         result.get("greeting") must be (Some("hello"))
 
         val result2: Map[String,Any] = intField.transformer[Map[String,Any]](result)(Some(10))
@@ -270,41 +269,41 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
                 Transformer((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
                   (map: Map[String,String]) => map)
         //qualified to point out that it's immutable
-        val result: Map[String,String] = stringField.transformer[immutable.Map[String,String]](immutable.Map.empty)(Some("hello"))
+        val result: Map[String,String] = stringField.transformer[Map[String,String]](Map.empty)(Some("hello"))
         result.get("greeting") must be (Some("HELLO"))
       }
     }
 
     describe("transform") {
       it("must use an initial and some data") {
-        val stringField = mapField[String]("greeting") +
-                Transformer((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
-                  (map: Map[String,String]) => map)
-        //qualified to point out that it's immutable
-        val result = stringField.transform(initial = immutable.Map.empty[String,String], data = immutable.Map("greeting" -> "hello", "ignored" -> "foo"))
-        result must be (immutable.Map[String,String]("greeting" -> "HELLO"))
+        val stringField = Transformer[Map[String,String],String](
+          (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
+          mapField[String]("greeting")
+
+        val result = stringField.transform[Map[String,String]](initial = Map("name" -> "George"), data = Map("greeting" -> "hello", "ignored" -> "foo"))
+        result must be (Map("greeting" -> "hello", "reply" -> "HELLO", "name" -> "George"))
       }
 
       it("must not transform if initial subject is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(initial = "inapplicable data", data = immutable.Map("greeting" -> "hello", "ignored" -> "foo"))
+        val result = stringField.transform(initial = "inapplicable data", data = Map("greeting" -> "hello", "ignored" -> "foo"))
         result must be ("inapplicable data")
       }
 
       it("must transform even if data is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(initial = immutable.Map[String,String]("greeting" -> "obsolete value"),
+        val result = stringField.transform(initial = Map[String,String]("greeting" -> "obsolete value"),
           data = "inapplicable data")
-        result must be (immutable.Map.empty[String,String])
+        result must be (Map.empty[String,String])
       }
     }
 
     describe("transformWithItem") {
       it("must transform using the applicable item") {
         val countField = default(12) + mapField[Int]("count")
-        val result = countField.transformWithItem(initial = immutable.Map.empty[String,Any],
+        val result = countField.transformWithItem(initial = Map.empty[String,Any],
                                                   dataItems = List(new Object, PortableField.UseDefaults))
-        result must be (immutable.Map[String,Any]("count" -> 12))
+        result must be (Map[String,Any]("count" -> 12))
       }
     }
 
@@ -329,8 +328,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     it("must support easily specifying a setter as a partial function") {
-      val field = Setter[Int] { case subject: Buffer[Int] => _.foreach(value => subject += value) }
-      val buffer = Buffer[Int](1, 2)
+      val field = Setter[Int] { case subject: mutable.Buffer[Int] => _.foreach(value => subject += value) }
+      val buffer = mutable.Buffer[Int](1, 2)
       field.setValue(buffer, Some(3))
       buffer.toList must be (List(1, 2, 3))
     }

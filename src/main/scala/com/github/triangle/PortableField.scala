@@ -96,9 +96,17 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
 
-  private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](get: PartialFunction[F,Option[T]], initial: S, data: F): S = {
-    if (transformer.isDefinedAt(initial)) {
-      copyFromUsingGetFunction(get, data).transform(initial)
+  /** A transformer that also has access to some items such as context that may be helpful when transforming. */
+  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+    case (subject, _) if transformer.isDefinedAt(subject) => v => transformer[S](subject)(v)
+  }
+
+  private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,List[AnyRef]),
+                                                                                         get: PartialFunction[F,Option[T]],
+                                                                                         data: F): S = {
+    val initial = initialAndItems._1
+    if (transformerUsingItems.isDefinedAt(initialAndItems)) {
+      copyFromUsingGetFunction(get, data).transform(initial, initialAndItems._2)
     } else {
       debug("Unable to " + transform_with_forField_message(initial, data, this) + " because of transformer.")
       initial
@@ -106,12 +114,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   //inherited
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S =
-    transformUsingGetFunctionCheckingTransformerFirst[S,AnyRef](getter, initial, data)
+  def transform[S <: AnyRef](initial: S, data: AnyRef): S = {
+    transformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, List(data)), getter, data)
+  }
 
   //inherited
   def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S =
-    transformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]](getterFromItem, initial, dataItems)
+    transformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]]((initial, dataItems), getterFromItem, dataItems)
 
   def copyFrom(from: AnyRef) = copyFromUsingGetFunction(getter, from)
 
@@ -148,9 +157,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
         setterUsingItems((to, contextItems))(value)
       }
 
-      def transform[S <: AnyRef](initial: S): S = {
+      def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
         debug("About to " + transform_with_forField_message(initial, "value " + value, self))
-        transformer[S](initial)(value)
+        transformerUsingItems[S](initial, contextItems)(value)
       }
 
       def get[T2](field: PortableField[T2]): Option[T2] = if (self == field) value.asInstanceOf[Option[T2]] else None
@@ -202,6 +211,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
         case subject if self.transformer.isDefinedAt(subject) || other.transformer.isDefinedAt(subject) => { value =>
           val definedFields = List(self, other).filter(_.transformer.isDefinedAt(subject))
           definedFields.foldLeft(subject)((subject, field) => field.transformer[S](subject)(value))
+        }
+      }
+
+      override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+        case x if self.transformerUsingItems.isDefinedAt(x) || other.transformerUsingItems.isDefinedAt(x) => { value =>
+          val definedFields = List(self, other).filter(_.transformerUsingItems.isDefinedAt(x))
+          definedFields.foldLeft(x)((soFar, field) => (field.transformerUsingItems[S](soFar)(value), soFar._2))._1
         }
       }
 
