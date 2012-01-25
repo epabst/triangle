@@ -23,8 +23,7 @@ trait FieldList extends Traversable[BaseField] with BaseField {
       def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) { portableValues.foreach(_.copyTo(to, contextItems)) }
 
       def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
-        //todo include ", contextItems"
-        portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject))
+        portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject, contextItems))
       }
 
       def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption
