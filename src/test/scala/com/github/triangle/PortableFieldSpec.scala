@@ -63,7 +63,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("adjustment") {
       it("must always happen when copying from Unit and it's the right kind of subject") {
         val adjust = adjustment[List[String]]("hello" +: _)
-        adjust.transform(List("world"), PortableField.UseDefaults).toList must equal(List("hello", "world"))
+        adjust.copyAndTransform(PortableField.UseDefaults, List("world")).toList must equal(List("hello", "world"))
       }
     }
 
@@ -107,7 +107,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
       it("must not add to a Map if value is None") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(Map.empty[String,String], None)
+        val result = stringField.copyAndTransform(None, Map.empty[String,String])
         result must be (Map.empty[String,String])
       }
     }
@@ -274,35 +274,34 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
     }
 
-    describe("transform") {
+    describe("copyAndTransform") {
       it("must use an initial and some data") {
         val stringField = Transformer[Map[String,String],String](
           (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
           mapField[String]("greeting")
 
-        val result = stringField.transform[Map[String,String]](initial = Map("name" -> "George"), data = Map("greeting" -> "hello", "ignored" -> "foo"))
+        val result = stringField.copyAndTransform[Map[String,String]](data = Map("greeting" -> "hello", "ignored" -> "foo"), initial = Map("name" -> "George"))
         result must be (Map("greeting" -> "hello", "reply" -> "HELLO", "name" -> "George"))
       }
 
       it("must not transform if initial subject is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(initial = "inapplicable data", data = Map("greeting" -> "hello", "ignored" -> "foo"))
+        val result = stringField.copyAndTransform(data = Map("greeting" -> "hello", "ignored" -> "foo"), initial = "inapplicable data")
         result must be ("inapplicable data")
       }
 
       it("must transform even if data is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.transform(initial = Map[String,String]("greeting" -> "obsolete value"),
-          data = "inapplicable data")
+        val result = stringField.copyAndTransform(data = "inapplicable data", initial = Map[String,String]("greeting" -> "obsolete value"))
         result must be (Map.empty[String,String])
       }
     }
 
-    describe("transformWithItem") {
+    describe("copyAndTransformWithItem") {
       it("must transform using the applicable item") {
         val countField = default(12) + mapField[Int]("count")
-        val result = countField.transformWithItem(initial = Map.empty[String,Any],
-                                                  dataItems = List(new Object, PortableField.UseDefaults))
+        val result = countField.copyAndTransformWithItem(dataItems = List(new Object, PortableField.UseDefaults),
+          initial = Map.empty[String,Any])
         result must be (Map[String,Any]("count" -> 12))
       }
     }
@@ -344,7 +343,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("transformer") {
       it("must support None as the value") {
         val field = Transformer[Int] { case subject: List[Int] => _.map(value => value +: subject).getOrElse(subject) }
-        field.transform(List(2, 3), None) must be (List(2, 3))
+        field.copyAndTransform(None, List(2, 3)) must be (List(2, 3))
       }
     }
 

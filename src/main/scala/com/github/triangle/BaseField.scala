@@ -27,12 +27,12 @@ trait BaseField {
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S
+  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S
 
   /** Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S
 
   /** Traverses all of the PortableFields in this PortableField, returning the desired information.
     * Anything not matched will be traversed deeper, if possible, or else ignored.

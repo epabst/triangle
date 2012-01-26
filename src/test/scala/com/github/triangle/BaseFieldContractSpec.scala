@@ -104,14 +104,14 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("transform") {
+  describe("copyAndTransform") {
     it("temporary: must have the new value and the original 'from' available for the transformer to use") {
-      val integer = fieldWithSetterUsingItems.transform(new AtomicInteger(30), Set(1,0,3))
+      val integer = fieldWithSetterUsingItems.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
     it("must have the new value and the original 'from' available for the transformer to use") {
-      val integer = baseFieldWithSetterUsingItems.transform(new AtomicInteger(30), Set(1,0,3))
+      val integer = baseFieldWithSetterUsingItems.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
@@ -122,9 +122,9 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("transformWithItem") {
+  describe("copyAndTransformWithItem") {
     it("must have the new value and the original items available for the transformer to use") {
-      val integer = baseFieldWithSetterUsingItems.transformWithItem(new AtomicInteger(30), List(PortableField.UseDefaults, Set(1,0,3)))
+      val integer = baseFieldWithSetterUsingItems.copyAndTransformWithItem(List(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
       integer.get() must be (104)
     }
   }

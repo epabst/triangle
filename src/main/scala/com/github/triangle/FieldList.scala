@@ -39,12 +39,14 @@ trait FieldList extends Traversable[BaseField] with BaseField {
     case (field: PortableField[_]) if field.transformerUsingItems.isDefinedAt((subject, contextItems)) => field
   }
 
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S = {
-    fields.foldLeft(initial)((subject, field) => field.transform(subject, data))
+  def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
+
+  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
+    fields.foldLeft(initial)((subject, field) => field.copyAndTransform(data, subject))
   }
 
-  def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S = {
-    fields.foldLeft(initial)((subject, field) => field.transformWithItem(subject, dataItems))
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S = {
+    fields.foldLeft(initial)((subject, field) => field.copyAndTransformWithItem(dataItems, subject))
   }
 
   override def deepCollect[B](f: PartialFunction[BaseField, B]) = fields.toList.flatMap(_.deepCollect(f))

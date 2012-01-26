@@ -101,7 +101,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     case (subject, _) if transformer.isDefinedAt(subject) => v => transformer[S](subject)(v)
   }
 
-  private def transformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,List[AnyRef]),
+  private def copyAndTransformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,List[AnyRef]),
                                                                                          get: PartialFunction[F,Option[T]],
                                                                                          data: F): S = {
     val initial = initialAndItems._1
@@ -114,13 +114,16 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   //inherited
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S = {
-    transformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, List(data)), getter, data)
+  def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
+
+  //inherited
+  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
+    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, List(data)), getter, data)
   }
 
   //inherited
-  def transformWithItem[S <: AnyRef](initial: S, dataItems: List[AnyRef]): S =
-    transformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]]((initial, dataItems), getterFromItem, dataItems)
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S =
+    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]]((initial, dataItems), getterFromItem, dataItems)
 
   def copyFrom(from: AnyRef) = copyFromUsingGetFunction(getter, from)
 

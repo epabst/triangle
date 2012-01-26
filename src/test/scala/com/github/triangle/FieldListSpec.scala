@@ -62,12 +62,12 @@ class FieldListSpec extends BaseFieldContractSpec {
       map.contains("price") must be (false)
     }
 
-    it("must transform using each Field") {
+    it("must copyAndTransform using each Field") {
       val countField = mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
-      val result = fields.transform(initial = immutable.Map.empty[String,Any],
-                                    data = immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10))
+      val result = fields.copyAndTransform(data = immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10),
+        initial = immutable.Map.empty[String,Any])
       result must be (immutable.Map[String,Any]("count" -> 10, "price" -> 100.0))
     }
 
@@ -75,8 +75,8 @@ class FieldListSpec extends BaseFieldContractSpec {
       val countField = default(12) + mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
-      val result = fields.transformWithItem(initial = immutable.Map.empty[String,Any],
-                                            dataItems = List(PortableField.UseDefaults, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)))
+      val result = fields.copyAndTransformWithItem(dataItems = List(PortableField.UseDefaults, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)),
+        initial = immutable.Map.empty[String,Any])
       result must be (immutable.Map[String,Any]("count" -> 12, "price" -> 100.0))
     }
   }
