@@ -86,7 +86,15 @@ trait PortableField[T] extends BaseField with Logging { self =>
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T]): S = transformer[S](initial)(value)
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: List[AnyRef] = Nil): S = {
+    val defined = transformerUsingItems[S].isDefinedAt(initial, items)
+    if (defined) {
+      transformerUsingItems[S].apply((initial, items))(value)
+    } else {
+      debug("Unable to transform " + initial + " with value " + value + " for field " + this + " with items " + items + ".")
+      initial
+    }
+  }
 
   /** PartialFunction for transforming an AnyRef using an optional value.
     * This delegates to {{{setter}}} for mutable objects.

@@ -46,3 +46,35 @@ object Transformer {
       }
     })
 }
+
+trait TransformerUsingItems[T] extends Transformer[T] {
+  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S]
+
+  def transformer[S <: AnyRef] = {
+    case context if transformerUsingItems.isDefinedAt((context, Nil)) => transformerUsingItems[S]((context, Nil))
+  }
+}
+
+trait SubjectTransformer[S <: AnyRef,T] extends TransformerUsingItems[T] with FieldWithSubject[S,T]
+
+object TransformerUsingItems {
+  def apply[T](body: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => AnyRef]): Transformer[T] = new TransformerUsingItems[T] {
+    override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+      case subjectAndItems if body.isDefinedAt(subjectAndItems) => value => body(subjectAndItems)(value).asInstanceOf[S]
+    }
+  }
+
+  /** Defines transformer field defined for a given type S with T as the value type. */
+  def apply[S <: AnyRef,T](body: (S, List[AnyRef]) => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): SubjectTransformer[S,T] = {
+    new SubjectTransformer[S,T] {
+      override def transformerUsingItems[S1]: PartialFunction[(S1,List[AnyRef]),Option[T] => S1] = {
+        case subjectAndItems if subjectManifest.erasure.isInstance(subjectAndItems._1) => value =>
+          body(subjectAndItems._1.asInstanceOf[S], subjectAndItems._2)(value).asInstanceOf[S1]
+      }
+
+      def subjectManifest = _subjectManifest
+
+      override def toString = "TransformerUsingItems[" + subjectManifest.erasure.getSimpleName + "]"
+    }
+  }
+}
