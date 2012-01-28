@@ -123,6 +123,32 @@ class ConverterSpec extends Spec with MustMatchers {
     }
   }
 
+  describe("stringToPercentage") {
+    it("must parse various number formats") {
+      stringToPercentage.convert("5.00%").get must be(0.05f)
+      stringToPercentage.convert("1%").get must be(0.01f)
+      stringToPercentage.convert("1.00").get must be(0.01f)
+      stringToPercentage.convert("1").get must be(0.01f)
+      stringToPercentage.convert("-1.00").get must be(-0.01f)
+      stringToPercentage.convert("-1").get must be(-0.01f)
+      stringToPercentage.convert("100%").get must be(1.0f)
+    }
+  }
+
+  describe("percentageToString") {
+    it("must format correctly") {
+      percentageToString.convert(0.1234f) must be (Some("12%"))
+      percentageToString.convert(0.20f) must be (Some("20%"))
+    }
+  }
+
+  describe("percentageToEditString") {
+    it("must format correctly") {
+      percentageToEditString.convert(0.1234f) must be (Some("12"))
+      percentageToEditString.convert(0.20f) must be (Some("20"))
+    }
+  }
+
   describe("stringToEnum") {
     object MyEnum extends Enumeration {
       val A = Value("A")

@@ -52,6 +52,25 @@ object Converter {
       new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
   )
 
+  private lazy val percentagePercentFormat = NumberFormat.getPercentInstance
+  private lazy val percentageEditNumberFormat = {
+    val editFormat = NumberFormat.getNumberInstance
+    editFormat.setMinimumFractionDigits(percentagePercentFormat.getMinimumFractionDigits)
+    editFormat.setMaximumFractionDigits(percentagePercentFormat.getMaximumFractionDigits)
+    editFormat
+  }
+  val stringToPercentage: Converter[String,Float] = new CompositeDirectConverter[String,Float](
+    new ParseFormatConverter[Float](percentagePercentFormat, _.asInstanceOf[Number].floatValue()) +:
+      List(percentageEditNumberFormat, NumberFormat.getNumberInstance).map(
+        new ParseFormatConverter[Float](_, _.asInstanceOf[Number].floatValue() / 100))
+  )
+  lazy val percentageToEditString: Converter[Float,String] = new Converter[Float,String] {
+    def convert(from: Float) = formatToString[Float](percentageEditNumberFormat).convert(from * 100)
+  }
+  lazy val percentageToString: Converter[Float,String] = new Converter[Float,String] {
+    def convert(from: Float) = formatToString[Float](percentagePercentFormat).convert(from)
+  }
+
   lazy val dateToLong = Converter[Date, Long](d => Some(d.getTime))
   lazy val longToDate = Converter[Long, Date](l => Some(new Date(l)))
 
