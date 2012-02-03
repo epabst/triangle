@@ -26,11 +26,11 @@ trait Logging {
     if (logger.isWarnEnabled) logger.warn(f)
   }
 
-  protected def error(f: => String) {
+  protected def logError(f: => String) {
     if (logger.isErrorEnabled) logger.error(f)
   }
 
-  protected def error(f: => String, e: Throwable) {
+  protected def logError(f: => String, e: Throwable) {
     if (logger.isErrorEnabled) logger.error(f, e)
   }
 }
