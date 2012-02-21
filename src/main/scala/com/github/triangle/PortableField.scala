@@ -160,19 +160,22 @@ trait PortableField[T] extends BaseField with Logging { self =>
       def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
         if (setterUsingItems.isDefinedAt((to, contextItems))) {
           copyToDefinedAt(to, contextItems)
+        } else {
+          debug("Unable to copy" + from_to_for_field_message(from, to, self)  + " due to setter.")
         }
       }
 
       private def copyToDefinedAt(to: AnyRef, contextItems: List[AnyRef]) {
-        debug("Copying " + value + from_to_for_field_message(from, to, self))
+        trace("Copying " + value + from_to_for_field_message(from, to, self))
         setterUsingItems((to, contextItems))(value)
       }
 
       def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
-        debug("About to " + transform_with_forField_message(initial, "value " + value, self))
         if (transformerUsingItems.isDefinedAt((initial, contextItems))) {
+          trace("About to " + transform_with_forField_message(initial, "value " + value, self))
           transformerUsingItems[S](initial, contextItems)(value)
         } else {
+          debug("Unable to " + transform_with_forField_message(initial, "value " + value, self) + " due to transformer")
           initial
         }
       }
