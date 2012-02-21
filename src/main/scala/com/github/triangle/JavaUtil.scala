@@ -14,10 +14,4 @@ object JavaUtil {
     }
     jMap
   }
-
-  implicit def toRunnable(operation: => Unit): Runnable = new Runnable {
-    def run() {
-      operation
-    }
-  }
 }
