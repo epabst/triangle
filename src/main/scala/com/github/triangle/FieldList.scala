@@ -7,7 +7,7 @@ import scala.collection._
   * It implements BaseField in order to use copy methods that return a PortableValue which represents a composite value.
   * @author Eric Pabst (epabst@gmail.com)
   */
-trait FieldList extends Traversable[BaseField] with BaseField {
+trait FieldList extends Traversable[BaseField] with BaseField with Logging {
 
   protected def fields: Traversable[BaseField]
 
@@ -20,9 +20,13 @@ trait FieldList extends Traversable[BaseField] with BaseField {
   private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue = {
     val portableValues = fields.map(f => baseFieldCopyMethod(f)(from))
     new PortableValue {
-      def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) { portableValues.foreach(_.copyTo(to, contextItems)) }
+      def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
+        debug("Copying PortableValue with " + portableValues + " to " + to)
+        portableValues.foreach(_.copyTo(to, contextItems))
+      }
 
       def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
+        debug("Transforming " + initial + " using PortableValue with " + portableValues)
         portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject, contextItems))
       }
 
