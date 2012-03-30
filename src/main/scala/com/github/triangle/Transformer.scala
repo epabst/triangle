@@ -48,7 +48,7 @@ object Transformer {
 }
 
 trait TransformerUsingItems[T] extends Transformer[T] {
-  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S]
+  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S]
 
   def transformer[S <: AnyRef] = {
     case context if transformerUsingItems.isDefinedAt((context, Nil)) => transformerUsingItems[S]((context, Nil))

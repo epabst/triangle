@@ -15,7 +15,7 @@ trait TransformerUsingSetter[T] extends PortableField[T] {
 trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
 
 trait SetterUsingItems[T] extends Setter[T] {
-  def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit]
+  override def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit]
 
   def setter = {
     case context if setterUsingItems.isDefinedAt((context, Nil)) => setterUsingItems((context, Nil))
