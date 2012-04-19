@@ -349,9 +349,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("truncate") {
       it("must remove package names from the result") {
-        val field = default(2)
         object Foo
-        field.truncate(Foo) must(not(include(Foo.getClass.getPackage.getName.take(8))))
+        PortableField.truncate(Foo) must(not(include(Foo.getClass.getPackage.getName.take(8))))
       }
     }
   }

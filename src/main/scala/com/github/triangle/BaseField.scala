@@ -46,17 +46,4 @@ trait BaseField {
     */
   // Default implementation only checks this field.  This should be overridden for any field wrapping other fields.
   def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = f.lift(this).toList
-
-  protected def from_to_for_field_message(from: AnyRef, to: AnyRef, field: BaseField): String =
-    " from " + truncate(from) + " to " + truncate(to) + " for field " + truncate(field)
-
-  protected def transform_with_forField_message(initial: AnyRef, data: Any, field: BaseField): String =
-    "transform " + truncate(initial) + " with " + truncate(data) + " for field " + truncate(field)
-
-  private[triangle] def truncate(any: Any): String = {
-    val stripStrings = Option(any).collect { case ref: AnyRef => ref.getClass.getPackage.getName + "." }
-    val rawString = String.valueOf(any)
-    val string = stripStrings.foldLeft(rawString)((soFar, strip) => soFar.replace(strip, ""))
-    string.substring(0, math.min(string.length, 25))
-  }
 }

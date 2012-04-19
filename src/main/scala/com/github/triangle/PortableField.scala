@@ -116,7 +116,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     if (transformerUsingItems.isDefinedAt(initialAndItems)) {
       copyFromUsingGetFunction(get, data).transform(initial, initialAndItems._2)
     } else {
-      debug("Unable to " + transform_with_forField_message(initial, data, this) + " because of transformer.")
+      debug("Unable to " + PortableField.transform_with_forField_message(initial, data, this) + " because of transformer.")
       initial
     }
   }
@@ -133,9 +133,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S =
     copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]]((initial, dataItems), getterFromItem, dataItems)
 
-  def copyFrom(from: AnyRef) = copyFromUsingGetFunction(getter, from)
+  def copyFrom(from: AnyRef): PortableValue1[T] = copyFromUsingGetFunction(getter, from)
 
-  def copyFromItem(fromItems: List[AnyRef]) = copyFromUsingGetFunction(getterFromItem, fromItems)
+  def copyFromItem(fromItems: List[AnyRef]): PortableValue1[T] = copyFromUsingGetFunction(getterFromItem, fromItems)
 
   override def copy(from: AnyRef, to: AnyRef) {
     copyUsingGetFunctionCheckingSetterFirst(getter, from, (to, List(from)))
@@ -150,40 +150,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
     if (setterUsingItems.isDefinedAt(toAndItems)) {
       copyFromUsingGetFunction(get, from).copyTo(toAndItems._1, toAndItems._2)
     } else {
-      debug("Unable to copy" + from_to_for_field_message(from, toAndItems._1, this)  + " due to setter.")
+      debug("Unable to copy" + PortableField.from_to_for_field_message(from, toAndItems._1, this)  + " due to setter.")
     }
   }
 
-  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue = {
+  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue1[T] = {
     val value: Option[T] = if (getFunction.isDefinedAt(from)) getFunction(from) else None
-    new PortableValue {
-      def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
-        if (setterUsingItems.isDefinedAt((to, contextItems))) {
-          copyToDefinedAt(to, contextItems)
-        } else {
-          debug("Unable to copy" + from_to_for_field_message(from, to, self)  + " due to setter.")
-        }
-      }
-
-      private def copyToDefinedAt(to: AnyRef, contextItems: List[AnyRef]) {
-        trace("Copying " + value + from_to_for_field_message(from, to, self))
-        setterUsingItems((to, contextItems))(value)
-      }
-
-      def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
-        if (transformerUsingItems.isDefinedAt((initial, contextItems))) {
-          trace("About to " + transform_with_forField_message(initial, "value " + value, self))
-          transformerUsingItems[S](initial, contextItems)(value)
-        } else {
-          debug("Unable to " + transform_with_forField_message(initial, "value " + value, self) + " due to transformer")
-          initial
-        }
-      }
-
-      def get[T2](field: PortableField[T2]): Option[T2] = if (self == field) value.asInstanceOf[Option[T2]] else None
-
-      override def toString = value.toString
-    }
+    PortableValue1(this, value)
   }
 
   /** Adds two PortableField objects together. */
@@ -250,6 +223,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 }
+
 case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
@@ -318,4 +292,17 @@ object PortableField {
   /** formatted replacement for primitive values. */
   def formatted[T <: AnyVal](field: PortableField[String])(implicit m: Manifest[T]): PortableField[T] =
     formatted(ValueFormat.basicFormat[T], field)
+
+  private[triangle] def from_to_for_field_message(from: AnyRef, to: AnyRef, field: BaseField): String =
+    " from " + truncate(from) + " to " + truncate(to) + " for field " + truncate(field)
+
+  private[triangle] def transform_with_forField_message(initial: AnyRef, data: Any, field: BaseField): String =
+    "transform " + truncate(initial) + " with " + truncate(data) + " for field " + truncate(field)
+
+  private[triangle] def truncate(any: Any): String = {
+    val stripStrings = Option(any).collect { case ref: AnyRef => ref.getClass.getPackage.getName + "." }
+    val rawString = String.valueOf(any)
+    val string = stripStrings.foldLeft(rawString)((soFar, strip) => soFar.replace(strip, ""))
+    string.substring(0, math.min(string.length, 25))
+  }
 }

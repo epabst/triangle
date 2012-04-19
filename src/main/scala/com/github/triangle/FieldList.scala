@@ -17,24 +17,8 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
 
   def copyFromItem(fromItems: List[AnyRef]) = copyFromUsingCopyMethod[List[AnyRef]](f => f.copyFromItem(_), fromItems)
 
-  private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue = {
-    val portableValues = fields.map(f => baseFieldCopyMethod(f)(from))
-    new PortableValue {
-      def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
-        debug("Copying PortableValue with " + portableValues + " to " + to)
-        portableValues.foreach(_.copyTo(to, contextItems))
-      }
-
-      def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef] = Nil): S = {
-        debug("Transforming " + initial + " using PortableValue with " + portableValues)
-        portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject, contextItems))
-      }
-
-      def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption
-
-      override def toString = "PortableValue(" + portableValues.mkString(",") + ")"
-    }
-  }
+  private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue =
+    new PortableValueSeq(fields.map(f => baseFieldCopyMethod(f)(from)))
 
   /** Narrows the FieldList to fields whose transformer isDefinedAt the given subject. */
   def copyableTo(subject: AnyRef, contextItems: List[AnyRef] = Nil): FieldList = deepCollect {
