@@ -22,6 +22,10 @@ import collection.mutable
   * @see #setter
   */
 trait PortableField[T] extends BaseField with Logging { self =>
+  def ->(value: Option[T]): PortableValue1[T] = new PortableValue1[T](this, value)
+
+  def ->(value: T): PortableValue1[T] = ->(Some(value))
+
   /** PartialFunction for getting an optional value from an AnyRef. */
   def getter: PartialFunction[AnyRef,Option[T]]
 
@@ -154,10 +158,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue1[T] = {
-    val value: Option[T] = if (getFunction.isDefinedAt(from)) getFunction(from) else None
-    PortableValue1(this, value)
-  }
+  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue1[T] =
+    this -> (if (getFunction.isDefinedAt(from)) getFunction(from) else None)
 
   /** Adds two PortableField objects together. */
   def +(other: PortableField[T]): PortableField[T] = {

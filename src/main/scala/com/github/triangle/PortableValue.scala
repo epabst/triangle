@@ -19,7 +19,7 @@ trait PortableValue {
   def get[T](field: PortableField[T]): Option[T]
 }
 
-case class PortableValue1[T](field: PortableField[T], value: Option[T]) extends PortableValue with Logging {
+class PortableValue1[T](field: PortableField[T], value: Option[T]) extends Tuple2(field, value) with PortableValue with Logging {
   protected def logTag = "triangle"
 
   def copyTo(to: AnyRef, contextItems: List[AnyRef] = Nil) {
@@ -66,4 +66,8 @@ class PortableValueSeq(portableValues: Traversable[PortableValue]) extends Porta
   def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption
 
   override def toString = "PortableValue(" + portableValues.mkString(",") + ")"
+}
+
+object PortableValue {
+  def apply(portableValues: PortableValue1[_]*): PortableValue = new PortableValueSeq(portableValues)
 }
