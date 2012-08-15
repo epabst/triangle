@@ -36,7 +36,7 @@
     <url>https://github.com/epabst/triangle</url>
   </scm>
   <properties>
-    <scala.version>2.9.2</scala.version>
+    <scala.version>2.9.1</scala.version>
     <!-- skip site:deploy because scala-tools hasn't set me up for this yet. -->
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
