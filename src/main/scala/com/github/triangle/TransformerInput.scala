@@ -10,4 +10,4 @@ package com.github.triangle
  *         Date: 8/16/12
  *         Time: 8:41 AM
  */
-case class TransformerInput[S <: AnyRef,T](subject: S, valueOpt: Option[T], context: GetterInput[AnyRef])
+case class TransformerInput[S <: AnyRef,T](subject: S, valueOpt: Option[T], context: GetterInput)
