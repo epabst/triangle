@@ -93,11 +93,11 @@ class FieldListSpec extends BaseFieldContractSpec {
 
     it("must only return fields that can transform the given subject with the given contextItems") {
       val appendField = SetterUsingItems[String] {
-        case (sb: StringBuffer, List(suffix: String)) => v => sb.append(v.getOrElse("none")).append(suffix)
+        case (sb: StringBuffer, GetterInput(List(suffix: String))) => v => sb.append(v.getOrElse("none")).append(suffix)
       }
       val priceField = mapField[Double]("price")
       val fields = FieldList(appendField, priceField)
-      fields.copyableTo(new StringBuffer, List("suffix")).toString must be (FieldList(appendField).toString())
+      fields.copyableTo(new StringBuffer, GetterInput.single("suffix")).toString must be (FieldList(appendField).toString())
     }
   }
 }

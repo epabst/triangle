@@ -18,13 +18,23 @@ trait BaseField {
   /** Copies this field from the first applicable item in {{{fromItems}}}.
     * @return a PortableValue that copies the value into its parameter
     */
-  def copyFromItem(fromItems: List[AnyRef]): PortableValue
+  @deprecated("use GetterInput instead of List")
+  def copyFromItem(fromItems: List[AnyRef]): PortableValue = copyFromItem(GetterInput(fromItems))
+
+  /** Copies this field from the first applicable item in {{{fromItems}}}.
+    * @return a PortableValue that copies the value into its parameter
+    */
+  def copyFromItem(fromItems: GetterInput): PortableValue
 
   /** Copies this field from {{{from}}} to {{{to}}}, if possible. */
-  def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to, List(from)) }
+  def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to, GetterInput.single(from)) }
 
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
-  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(fromItems).copyTo(to, fromItems) }
+  @deprecated("use GetterInput instead of List")
+  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(GetterInput(fromItems), to) }
+
+  /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
+  def copyFromItem(fromItems: GetterInput, to: AnyRef) { copyFromItem(fromItems).copyTo(to, fromItems) }
 
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
@@ -34,7 +44,14 @@ trait BaseField {
   /** Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S
+  @deprecated("use GetterInput instead of List")
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S =
+    copyAndTransformWithItem(GetterInput(dataItems), initial)
+
+  /** Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
+    * @return the transformed subject, which could be the initial instance
+    */
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: GetterInput, initial: S): S
 
   /** Traverses all of the PortableFields in this PortableField, returning the desired information.
     * Anything not matched will be traversed deeper, if possible, or else ignored.
@@ -45,5 +62,5 @@ trait BaseField {
     * </pre>
     */
   // Default implementation only checks this field.  This should be overridden for any field wrapping other fields.
-  def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = f.lift(this).toList
+  def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = f.lift(this).toSeq
 }

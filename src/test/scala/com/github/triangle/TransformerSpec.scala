@@ -19,7 +19,7 @@ class TransformerSpec extends Spec with MustMatchers {
 
   describe("TransformerUsingItems") {
     val stringField: PortableField[String] =
-      TransformerUsingItems((e: MyEntity, items) => v => e.copy(name = v.getOrElse("(none)") + items.mkString("-", "-", "")))
+      TransformerUsingItems((e: MyEntity, input) => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")))
 
     it("must allow using the items while setting") {
       val entity = stringField.transformWithValue(new MyEntity(), Some("James"), List("Bond", "007"))
@@ -28,7 +28,7 @@ class TransformerSpec extends Spec with MustMatchers {
 
     it("must be constructable with a partial function") {
       val field: PortableField[String] = TransformerUsingItems[String] {
-        case (e: MyEntity, items) if items.contains("Bond") => v => e.copy(name = v.getOrElse("(none)") + items.mkString("-", "-", ""))
+        case (e: MyEntity, input) if input.items.contains("Bond") => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", ""))
       }
       val entity = field.transformWithValue(new MyEntity(), Some("James"), List("Dean"))
       entity.name must be ("(none)")

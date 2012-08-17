@@ -27,12 +27,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def ->(value: T): PortableValue1[T] = ->(Some(value))
 
   /** PartialFunction for getting an optional value from an AnyRef. */
+  @deprecated("use getterFromItem which should be renamed to getter")
   def getter: PartialFunction[AnyRef,Option[T]]
 
   /** extractor for finding the applicable items, if any. */
   private object ApplicableItems {
-    def unapply(items: List[_]): Option[List[AnyRef]] = {
-      val applicableItems = items.map(_.asInstanceOf[AnyRef]).filter(getter.isDefinedAt(_))
+    def unapply(input: GetterInput): Option[Seq[AnyRef]] = {
+      val applicableItems = input.items.filter(getter.isDefinedAt(_))
       if (applicableItems.isEmpty) None else Some(applicableItems)
     }
   }
@@ -43,11 +44,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
     result
   }
 
-  /** PartialFunction for getting an optional value from the first AnyRef in the List that has Some value.
+  /** PartialFunction for getting an optional value from the first AnyRef in the GetterInput that has Some value.
     * If none of them has Some value, then it will return None if at least one of them applies.
     * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
     */
-  def getterFromItem: PartialFunction[List[_],Option[T]] = {
+  def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
     case ApplicableItems(items) => items.view.map(get(_)).find(_.isDefined).getOrElse(None)
   }
 
@@ -59,33 +60,46 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def apply(subject: AnyRef): T = get(subject).get
 
-  /** An extractor that matches the value as an Option.
+  /** An extractor from a GetterInput that matches the value as an Option.
     * Example: {{{case MyField(Some(string)) => ...}}}
     */
-  def unapply(subject: AnyRef): Option[Option[T]] = subject match {
-    case x if getter.isDefinedAt(x) => Some(get(x))
-    case items: List[_] if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
+  def unapply(subject: GetterInput): Option[Option[T]] = subject match {
+    case items: GetterInput if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
     case _ => None
   }
+
+  /** An extractor from an AnyRef that matches the value as an Option.
+    * Example: {{{case MyField(Some(string)) => ...}}}
+    */
+  def unapply(subject: AnyRef): Option[Option[T]] = unapply(GetterInput.single(subject))
 
   /** PartialFunction for setting an optional value in an AnyRef. */
   def setter: PartialFunction[AnyRef,Option[T] => Unit]
 
   /** A setter that also has access to some items such as context that may be helpful when setting. */
-  def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit] = {
+  def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
     case (subject, _) if setter.isDefinedAt(subject) => v => setter(subject)(v)
   }
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
     * @return true if any were successful
     */
-  def setValue(subject: AnyRef, value: Option[T]): Boolean = setValue(subject, value, Nil)
+  def setValue(subject: AnyRef, value: Option[T]): Boolean = setValue(subject, value, GetterInput.empty)
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
     * @param items optional extra items usable by the setterUsingItems
     * @return true if any were successful
     */
+  @deprecated("use GetterInput instead of List[AnyRef]")
   def setValue(subject: AnyRef, value: Option[T], items: List[AnyRef]): Boolean = {
+    setValue(subject, value, GetterInput(items))
+  }
+
+  /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
+    * @param items optional extra items usable by the setterUsingItems
+    * @return true if any were successful
+    */
+  def setValue(subject: AnyRef, value: Option[T], items: GetterInput): Boolean = {
     val defined = setterUsingItems.isDefinedAt(subject, items)
     if (defined) setterUsingItems(subject, items)(value)
     else debug("Unable to set value " + value + " into " + subject + " for field " + this + " with items " + items + ".")
@@ -95,7 +109,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: List[AnyRef] = Nil): S = {
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: List[AnyRef]): S =
+    transformWithValue(initial, value, GetterInput(items))
+
+  /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
+    * @return the transformed subject, which could be the initial instance
+    */
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: GetterInput = GetterInput.empty): S = {
     val defined = transformerUsingItems[S].isDefinedAt(initial, items)
     if (defined) {
       transformerUsingItems[S].apply((initial, items))(value)
@@ -114,11 +134,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
 
   /** A transformer that also has access to some items such as context that may be helpful when transforming. */
-  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
     case (subject, _) if transformer.isDefinedAt(subject) => v => transformer[S](subject)(v)
   }
 
-  private def copyAndTransformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,List[AnyRef]),
+  private def copyAndTransformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,GetterInput),
                                                                                          get: PartialFunction[F,Option[T]],
                                                                                          data: F): S = {
     val initial = initialAndItems._1
@@ -135,27 +155,27 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
-    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, List(data)), getter, data)
+    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, GetterInput.single(data)), getter, data)
   }
 
   //inherited
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S =
-    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,List[AnyRef]]((initial, dataItems), getterFromItem, dataItems)
+  def copyAndTransformWithItem[S <: AnyRef](dataItems: GetterInput, initial: S): S =
+    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,GetterInput]((initial, dataItems), getterFromItem, dataItems)
 
   def copyFrom(from: AnyRef): PortableValue1[T] = copyFromUsingGetFunction(getter, from)
 
-  def copyFromItem(fromItems: List[AnyRef]): PortableValue1[T] = copyFromUsingGetFunction(getterFromItem, fromItems)
+  def copyFromItem(fromItems: GetterInput): PortableValue1[T] = copyFromUsingGetFunction(getterFromItem, fromItems)
 
   override def copy(from: AnyRef, to: AnyRef) {
-    copyUsingGetFunctionCheckingSetterFirst(getter, from, (to, List(from)))
+    copyUsingGetFunctionCheckingSetterFirst(getter, from, (to, GetterInput.single(from)))
   }
 
   //inherited
-  override def copyFromItem(fromItems: List[AnyRef], to: AnyRef) {
+  override def copyFromItem(fromItems: GetterInput, to: AnyRef) {
     copyUsingGetFunctionCheckingSetterFirst(getterFromItem, fromItems, (to, fromItems))
   }
 
-  private def copyUsingGetFunctionCheckingSetterFirst[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F, toAndItems: (AnyRef,List[AnyRef])) {
+  private def copyUsingGetFunctionCheckingSetterFirst[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F, toAndItems: (AnyRef,GetterInput)) {
     if (setterUsingItems.isDefinedAt(toAndItems)) {
       copyFromUsingGetFunction(get, from).copyTo(toAndItems._1, toAndItems._2)
     } else {
@@ -197,7 +217,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
       }
 
       /** Combines the two setterUsingItems, calling only applicable ones (not just the first though). */
-      override def setterUsingItems: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => Unit] = {
+      override def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
         case x if self.setterUsingItems.isDefinedAt(x) || other.setterUsingItems.isDefinedAt(x) => { value =>
           val definedFields = List(self, other).view.filter(_.setterUsingItems.isDefinedAt(x))
           if (definedFields.isEmpty) throw new MatchError("setterUsingItems in " + PortableField.this)
@@ -212,18 +232,18 @@ trait PortableField[T] extends BaseField with Logging { self =>
         }
       }
 
-      override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+      override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
         case x if self.transformerUsingItems.isDefinedAt(x) || other.transformerUsingItems.isDefinedAt(x) => { value =>
           val definedFields = List(self, other).filter(_.transformerUsingItems.isDefinedAt(x))
           definedFields.foldLeft(x)((soFar, field) => (field.transformerUsingItems[S](soFar)(value), soFar._2))._1
         }
       }
 
-      override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
+      override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {
         super.deepCollect[R](f) match {
           case Nil =>
             val lifted = f.lift
-            List(self, other).flatMap(field => lifted(field).map(List[R](_)).getOrElse(field.deepCollect(f)))
+            List(self, other).flatMap(field => lifted(field).map(Seq[R](_)).getOrElse(field.deepCollect(f)))
           case x => x
         }
       }

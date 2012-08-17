@@ -14,7 +14,7 @@ class SetterSpec extends Spec with MustMatchers {
 
   describe("SetterUsingItems") {
     val stringField: PortableField[String] =
-      SetterUsingItems((e: MyEntity, items) => v => e.name = v.getOrElse("(none)") + items.mkString("-", "-", ""))
+      SetterUsingItems((e: MyEntity, input) => v => e.name = v.getOrElse("(none)") + input.items.mkString("-", "-", ""))
     
     it("must allow using the items while setting") {
       val entity = new MyEntity()
@@ -24,7 +24,7 @@ class SetterSpec extends Spec with MustMatchers {
 
     it("must be constructable with a partial function") {
       val field: PortableField[String] = SetterUsingItems[String] {
-        case (e: MyEntity, items) if items.contains("Bond") => v => e.name = v.getOrElse("(none)") + items.mkString("-", "-", "")
+        case (e: MyEntity, input) if input.items.contains("Bond") => v => e.name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")
       }
       val entity = new MyEntity()
       field.setValue(entity, Some("James"), List("Dean")) must be (false)

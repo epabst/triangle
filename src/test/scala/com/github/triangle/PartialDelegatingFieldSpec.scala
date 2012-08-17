@@ -68,7 +68,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
         case AnyRefHolder(ref) => ref
       }
     }
-    field.getterFromItem(List(AnyRefHolder("hello"), "ignored", AnyRefHolder(Set(1,0,3)))) must be (Some("hello4"))
+    field.getterFromItem(GetterInput(AnyRefHolder("hello"), "ignored", AnyRefHolder(Set(1,0,3)))) must be (Some("hello4"))
   }
 
   it("must unwrap the AnyRef for setterUsingItem") {

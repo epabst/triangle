@@ -35,7 +35,7 @@ object Getter {
   * in getting the value.
   */
 object GetterFromItem {
-  def apply[T](body: PartialFunction[List[_],Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
+  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
     override def getterFromItem = body
   }
 }

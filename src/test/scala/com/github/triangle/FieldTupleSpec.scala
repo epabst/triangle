@@ -30,7 +30,7 @@ class FieldTupleSpec extends Spec with MustMatchers {
         }
       }
       //use it to match a List of AnyRefs
-      fieldTuple.valuesTupleFromItem(List(PortableField.UseDefaults)) match {
+      fieldTuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
         case (myInt, myString, myDouble) => {
           myInt must be (Some(10))
           myString must be (Some("Hello"))

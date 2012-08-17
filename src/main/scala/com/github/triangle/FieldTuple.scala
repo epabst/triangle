@@ -17,7 +17,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   def valuesTuple(readable: AnyRef): ValuesTuple
 
   /** Gets a Tuple with the results of calling each getterFromItem with {{{items}}} as the parameter. */
-  def valuesTupleFromItem(items: List[AnyRef]): ValuesTuple
+  def valuesTupleFromItem(items: GetterInput): ValuesTuple
 
   /** Sets the values into {{{subject}}}. */
   def setValues[T](subject: AnyRef, values: ValuesTuple)
@@ -36,14 +36,14 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
         override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
           val lifted = f.lift
           //don't traverse theTransformer since it duplicates the fields within selfField
-          lifted(this).orElse(lifted(selfField)).map(List(_)).getOrElse(selfField.deepCollect(f))
+          lifted(this).orElse(lifted(selfField)).map(Seq(_)).getOrElse(selfField.deepCollect(f))
         }
       }
     }
 
-    override def deepCollect[R](f: PartialFunction[BaseField, R]): List[R] = {
+    override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {
       val lifted = f.lift
-      productIterator.toList.flatMap(field => lifted(field).map(List(_)).getOrElse(field.deepCollect(f)))
+      productIterator.toSeq.flatMap(field => lifted(field).map(Seq(_)).getOrElse(field.deepCollect(f)))
     }
   }
 
@@ -116,7 +116,7 @@ case class FieldTuple2[F1,F2](_1: PortableField[F1], _2: PortableField[F2])
   type ValuesTuple = (Option[F1], Option[F2])
   def emptyValuesTuple = (None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items))
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)
     _2.setter(subject)(values._2)
@@ -132,7 +132,7 @@ case class FieldTuple3[F1,F2,F3](_1: PortableField[F1], _2: PortableField[F2], _
   type ValuesTuple = (Option[F1], Option[F2], Option[F3])
   def emptyValuesTuple = (None, None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable), _3.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items))
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)
     _2.setter(subject)(values._2)
@@ -151,7 +151,7 @@ case class FieldTuple4[F1,F2,F3,F4](_1: PortableField[F1], _2: PortableField[F2]
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4])
   def emptyValuesTuple = (None, None, None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable), _3.getter(readable), _4.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
           _4.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)
@@ -174,7 +174,7 @@ case class FieldTuple5[F1,F2,F3,F4,F5](_1: PortableField[F1], _2: PortableField[
   def emptyValuesTuple = (None, None, None, None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable), _3.getter(readable),
           _4.getter(readable), _5.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
           _4.getterFromItem(items), _5.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)
@@ -199,7 +199,7 @@ case class FieldTuple6[F1,F2,F3,F4,F5,F6](_1: PortableField[F1], _2: PortableFie
   def emptyValuesTuple = (None, None, None, None, None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable), _3.getter(readable),
           _4.getter(readable), _5.getter(readable), _6.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
           _4.getterFromItem(items), _5.getterFromItem(items), _6.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)
@@ -227,7 +227,7 @@ case class FieldTuple7[F1,F2,F3,F4,F5,F6,F7](_1: PortableField[F1], _2: Portable
   def emptyValuesTuple = (None, None, None, None, None, None, None)
   def valuesTuple(readable: AnyRef) = (_1.getter(readable), _2.getter(readable), _3.getter(readable),
           _4.getter(readable), _5.getter(readable), _6.getter(readable), _7.getter(readable))
-  def valuesTupleFromItem(items: List[AnyRef]) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
+  def valuesTupleFromItem(items: GetterInput) = (_1.getterFromItem(items), _2.getterFromItem(items), _3.getterFromItem(items),
           _4.getterFromItem(items), _5.getterFromItem(items), _6.getterFromItem(items), _7.getterFromItem(items))
   def setValues[T](subject: AnyRef, values: ValuesTuple) {
     _1.setter(subject)(values._1)

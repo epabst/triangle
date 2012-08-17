@@ -48,26 +48,26 @@ object Transformer {
 }
 
 trait TransformerUsingItems[T] extends Transformer[T] {
-  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S]
+  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S]
 
   def transformer[S <: AnyRef] = {
-    case context if transformerUsingItems.isDefinedAt((context, Nil)) => transformerUsingItems[S]((context, Nil))
+    case context if transformerUsingItems.isDefinedAt((context, GetterInput.empty)) => transformerUsingItems[S]((context, GetterInput.empty))
   }
 }
 
 trait SubjectTransformer[S <: AnyRef,T] extends TransformerUsingItems[T] with FieldWithSubject[S,T]
 
 object TransformerUsingItems {
-  def apply[T](body: PartialFunction[(AnyRef,List[AnyRef]),Option[T] => AnyRef]): Transformer[T] = new TransformerUsingItems[T] {
-    override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = {
+  def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => AnyRef]): Transformer[T] = new TransformerUsingItems[T] {
+    override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
       case subjectAndItems if body.isDefinedAt(subjectAndItems) => value => body(subjectAndItems)(value).asInstanceOf[S]
     }
   }
 
   /** Defines transformer field defined for a given type S with T as the value type. */
-  def apply[S <: AnyRef,T](body: (S, List[AnyRef]) => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): SubjectTransformer[S,T] = {
+  def apply[S <: AnyRef,T](body: (S, GetterInput) => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): SubjectTransformer[S,T] = {
     new SubjectTransformer[S,T] {
-      override def transformerUsingItems[S1]: PartialFunction[(S1,List[AnyRef]),Option[T] => S1] = {
+      override def transformerUsingItems[S1]: PartialFunction[(S1,GetterInput),Option[T] => S1] = {
         case subjectAndItems if subjectManifest.erasure.isInstance(subjectAndItems._1) => value =>
           body(subjectAndItems._1.asInstanceOf[S], subjectAndItems._2)(value).asInstanceOf[S1]
       }

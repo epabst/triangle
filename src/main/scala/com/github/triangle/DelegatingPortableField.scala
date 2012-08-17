@@ -25,7 +25,7 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = delegate.transformer
 
-  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,List[AnyRef]),Option[T] => S] = delegate.transformerUsingItems
+  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = delegate.transformerUsingItems
 }
 
 /** a PortableField[T] that wraps another for use with creating field objects.
@@ -44,9 +44,9 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsi
       delegate.getter.isDefinedAt(subjectGetter(subject)) => delegate.getter(subjectGetter(subject))
   }
 
-  override def getterFromItem: PartialFunction[List[_],Option[T]] = {
-    case items: List[_] if delegate.getterFromItem.isDefinedAt(items.map(_.asInstanceOf[AnyRef]).collect(subjectGetter)) =>
-      delegate.getterFromItem(items.map(_.asInstanceOf[AnyRef]).collect(subjectGetter))
+  override def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
+    case input: GetterInput if delegate.getterFromItem.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
+      delegate.getterFromItem(GetterInput(input.items.collect(subjectGetter)))
   }
 
   override def setter: PartialFunction[AnyRef,Option[T] => Unit] = {

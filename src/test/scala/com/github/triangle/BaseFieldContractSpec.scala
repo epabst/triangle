@@ -25,7 +25,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   val fieldWithSetterUsingItems = new TransformerUsingSetter[Int] with NoGetter[Int] {
     def setter = throw new UnsupportedOperationException
 
-    override def setterUsingItems: PartialFunction[(AnyRef, List[AnyRef]), Option[Int] => Unit] = {
+    override def setterUsingItems: PartialFunction[(AnyRef, GetterInput), Option[Int] => Unit] = {
       case (integer: AtomicInteger, IntSetIdentityField(Some(integers))) => value =>
         integer.set(value.getOrElse(0) + integers.sum)
     }
@@ -124,7 +124,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
 
   describe("copyAndTransformWithItem") {
     it("must have the new value and the original items available for the transformer to use") {
-      val integer = baseFieldWithSetterUsingItems.copyAndTransformWithItem(List(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
+      val integer = baseFieldWithSetterUsingItems.copyAndTransformWithItem(GetterInput(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
       integer.get() must be (104)
     }
   }
@@ -132,7 +132,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   describe("copyFrom then transform with contextItems") {
     it("must have the new value and the original items available for the transformer to use") {
       val portableValue = baseFieldWithSetterUsingItems.copyFrom(UseDefaults)
-      val integer = portableValue.transform(new AtomicInteger(30), List(Set(1,0,3)))
+      val integer = portableValue.transform(new AtomicInteger(30), GetterInput.single(Set(1,0,3)))
       integer.get() must be (104)
     }
   }
