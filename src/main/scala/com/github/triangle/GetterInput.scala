@@ -10,7 +10,9 @@ package com.github.triangle
  *         Time: 8:42 AM
  */
 
-case class GetterInput(items: Seq[AnyRef])
+case class GetterInput(items: Seq[AnyRef]) {
+  def +:(item: AnyRef): GetterInput = GetterInput(item +: items)
+}
 
 /** Usage: GetterInput(foo, bar, baz) and pass to PortableField.getter */
 object GetterInput {
