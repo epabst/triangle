@@ -4,9 +4,11 @@ organization := "com.github.epabst.triangle"
 
 version := "0.6-SNAPSHOT"
 
-scalaVersion := "2.9.1"
+scalaVersion := "2.8.1"
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
+libraryDependencies += "org.slf4j" % "slf4j-api" % "1.6.1"
 
 libraryDependencies += "org.slf4j" % "slf4j-jdk14" % "1.6.1" % "test"
 
