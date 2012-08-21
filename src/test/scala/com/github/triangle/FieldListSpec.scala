@@ -32,7 +32,7 @@ class FieldListSpec extends BaseFieldContractSpec {
       map.contains("price") must be (true)
       priceField(map) must be (300.00)
       //must have been overwritten because the Map didn't have it
-      countField.getter(map) must be (None)
+      countField.getValue(map) must be (None)
     }
 
     it("must copy values that apply from list of items") {

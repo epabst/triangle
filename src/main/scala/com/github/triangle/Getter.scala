@@ -4,7 +4,7 @@ package com.github.triangle
   * T is the value type.
   * S is the the Readable type to get the value out of.
   */
-abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with Logging {
+abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with SingleGetter[T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
@@ -12,14 +12,34 @@ abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassMan
 }
 
 trait NoGetter[T] extends PortableField[T] {
-  def getter = PortableField.emptyPartialFunction
+  def getterFromItem = PortableField.emptyPartialFunction
 }
 
 trait Getter[T] extends NoTransformer[T]
 
+trait SingleGetter[T] extends Getter[T] {
+  /** PartialFunction for getting an optional value from an AnyRef. */
+  def getter: PartialFunction[AnyRef,Option[T]]
+
+  /**
+   * PartialFunction for getting an optional value from the first AnyRef in the GetterInput that has Some value using getter.
+   * If none of them has Some value, then it will return None if at least one of them applies.
+   * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
+   */
+  final override def getterFromItem = {
+    case input: GetterInput if input.items.exists(getter.isDefinedAt(_)) =>
+      input.items.view.collect(getter).find(_.isDefined).getOrElse(None)
+  }
+}
+
 object Getter {
-  def apply[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
-    def getter = body
+
+  def single[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
+
+    override def getterFromItem = {
+      case input: GetterInput if input.items.exists(body.isDefinedAt(_)) =>
+        input.items.view.collect(body).find(_.isDefined).getOrElse(None)
+    }
   }
 
   /** Defines a getter field for a type. */
@@ -35,7 +55,7 @@ object Getter {
   * in getting the value.
   */
 object GetterFromItem {
-  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] with NoGetter[T] {
+  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] {
     override def getterFromItem = body
   }
 }

@@ -8,7 +8,7 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
 
   def unconvert(value: T): Option[F]
 
-  def getter = field.getter.andThen(value => value.flatMap(convert(_)))
+  def getterFromItem = field.getterFromItem.andThen(value => value.flatMap(convert(_)))
 
   def setter = field.setter.andThen(setter => setter.compose(value => value.flatMap(unconvert(_))))
 

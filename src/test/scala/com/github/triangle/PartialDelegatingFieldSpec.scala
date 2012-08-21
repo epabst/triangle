@@ -31,7 +31,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
       }
     }
     val holder = AnyRefHolder(PortableField.UseDefaults)
-    field.getter(holder) must be (Some(5))
+    field.getValue(holder) must be (Some(5))
   }
 
   it("must unwrap the AnyRef for setter") {

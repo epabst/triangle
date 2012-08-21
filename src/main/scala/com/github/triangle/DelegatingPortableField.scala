@@ -15,8 +15,6 @@ trait FieldWithDelegate[T] extends PortableField[T] {
 trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   protected def delegate: PortableField[T]
 
-  def getter = delegate.getter
-
   override def getterFromItem = delegate.getterFromItem
 
   def setter = delegate.setter
@@ -39,12 +37,7 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsi
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
 
-  def getter = {
-    case subject if subjectGetter.isDefinedAt(subject) &&
-      delegate.getter.isDefinedAt(subjectGetter(subject)) => delegate.getter(subjectGetter(subject))
-  }
-
-  override def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
+  def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
     case input: GetterInput if delegate.getterFromItem.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
       delegate.getterFromItem(GetterInput(input.items.collect(subjectGetter)))
   }

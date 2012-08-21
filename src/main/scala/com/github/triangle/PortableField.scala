@@ -26,39 +26,26 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   def ->(value: T): PortableValue1[T] = ->(Some(value))
 
-  /** PartialFunction for getting an optional value from an AnyRef. */
-  @deprecated("use getterFromItem which should be renamed to getter")
-  def getter: PartialFunction[AnyRef,Option[T]]
-
-  /** extractor for finding the applicable items, if any. */
-  private object ApplicableItems {
-    def unapply(input: GetterInput): Option[Seq[AnyRef]] = {
-      val applicableItems = input.items.filter(getter.isDefinedAt(_))
-      if (applicableItems.isEmpty) None else Some(applicableItems)
-    }
-  }
-
-  private def get(readable: AnyRef): Option[T] = {
-    val result = getter(readable)
-    require(result != null, this + "'s getter is non-functional.  It should never return a null.")
-    result
-  }
-
   /** PartialFunction for getting an optional value from the first AnyRef in the GetterInput that has Some value.
     * If none of them has Some value, then it will return None if at least one of them applies.
     * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
     */
-  def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
-    case ApplicableItems(items) => items.view.map(get(_)).find(_.isDefined).getOrElse(None)
+  def getterFromItem: PartialFunction[GetterInput,Option[T]]
+
+  //todo rename to apply
+  def getValue(readable: AnyRef): Option[T] = {
+    val result = getterFromItem(GetterInput.single(readable))
+    require(result != null, this + "'s getter is non-functional.  It should never return a null.")
+    result
   }
 
   /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
-    * @see [[com.github.triangle.PortableField.getter]]
+    * @see [[com.github.triangle.PortableField.getterFromItem]]
     * @return the value
     * @throws NoSuchElementException if the value was None
     * @throws MatchError if subject is not an applicable type
     */
-  def apply(subject: AnyRef): T = get(subject).get
+  def apply(subject: AnyRef): T = getValue(subject).get
 
   /** An extractor from a GetterInput that matches the value as an Option.
     * Example: {{{case MyField(Some(string)) => ...}}}
@@ -138,67 +125,46 @@ trait PortableField[T] extends BaseField with Logging { self =>
     case (subject, _) if transformer.isDefinedAt(subject) => v => transformer[S](subject)(v)
   }
 
-  private def copyAndTransformUsingGetFunctionCheckingTransformerFirst[S <: AnyRef,F <: AnyRef](initialAndItems: (S,GetterInput),
-                                                                                         get: PartialFunction[F,Option[T]],
-                                                                                         data: F): S = {
-    val initial = initialAndItems._1
-    if (transformerUsingItems.isDefinedAt(initialAndItems)) {
-      copyFromUsingGetFunction(get, data).transform(initial, initialAndItems._2)
-    } else {
-      debug("Unable to " + PortableField.transform_with_forField_message(initial, data, this) + " because of transformer.")
-      initial
-    }
-  }
-
   //inherited
   def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
 
   //inherited
   def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
-    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,AnyRef]((initial, GetterInput.single(data)), getter, data)
+    copyAndTransformWithItem(GetterInput.single(data), initial)
   }
 
   //inherited
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: GetterInput, initial: S): S =
-    copyAndTransformUsingGetFunctionCheckingTransformerFirst[S,GetterInput]((initial, dataItems), getterFromItem, dataItems)
-
-  def copyFrom(from: AnyRef): PortableValue1[T] = copyFromUsingGetFunction(getter, from)
-
-  def copyFromItem(fromItems: GetterInput): PortableValue1[T] = copyFromUsingGetFunction(getterFromItem, fromItems)
-
-  override def copy(from: AnyRef, to: AnyRef) {
-    copyUsingGetFunctionCheckingSetterFirst(getter, from, (to, GetterInput.single(from)))
-  }
-
-  //inherited
-  override def copyFromItem(fromItems: GetterInput, to: AnyRef) {
-    copyUsingGetFunctionCheckingSetterFirst(getterFromItem, fromItems, (to, fromItems))
-  }
-
-  private def copyUsingGetFunctionCheckingSetterFirst[F <: AnyRef](get: PartialFunction[F,Option[T]], from: F, toAndItems: (AnyRef,GetterInput)) {
-    if (setterUsingItems.isDefinedAt(toAndItems)) {
-      copyFromUsingGetFunction(get, from).copyTo(toAndItems._1, toAndItems._2)
+  def copyAndTransformWithItem[S <: AnyRef](input: GetterInput, initial: S): S = {
+    if (transformerUsingItems.isDefinedAt((initial, input))) {
+      copyFromItem(input).transform(initial, input)
     } else {
-      debug("Unable to copy" + PortableField.from_to_for_field_message(from, toAndItems._1, this)  + " due to setter.")
+      debug("Unable to " + PortableField.transform_with_forField_message(initial, input, this) + " because of transformer.")
+      initial
     }
   }
 
-  private def copyFromUsingGetFunction[F <: AnyRef](getFunction: PartialFunction[F,Option[T]], from: F): PortableValue1[T] =
-    this -> (if (getFunction.isDefinedAt(from)) getFunction(from) else None)
+  def copyFrom(from: AnyRef): PortableValue1[T] = copyFromItem(GetterInput.single(from))
+
+  def copyFromItem(input: GetterInput): PortableValue1[T] =
+    this -> (if (getterFromItem.isDefinedAt(input)) getterFromItem(input) else None)
+
+  override def copy(from: AnyRef, to: AnyRef) {
+    copyFromItem(GetterInput.single(from), to)
+  }
+
+  //inherited
+  override def copyFromItem(input: GetterInput, to: AnyRef) {
+    if (setterUsingItems.isDefinedAt((to, input))) {
+      copyFromItem(input).copyTo(to, input)
+    } else {
+      debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")
+    }
+  }
 
   /** Adds two PortableField objects together. */
   def +(other: PortableField[T]): PortableField[T] = {
     new PortableField[T] {
       override def toString = self + " + " + other
-
-      def getter = {
-        case x if self.getter.isDefinedAt(x) || other.getter.isDefinedAt(x) => {
-          val values = List(self, other).view.collect {
-            case field if field.getter.isDefinedAt(x) => field.get(x)
-          }
-          values.find(_.isDefined).getOrElse(None)
-        }
-      }
 
       override def getterFromItem = {
         case items if self.getterFromItem.isDefinedAt(items) || other.getterFromItem.isDefinedAt(items) => {
@@ -283,7 +249,7 @@ object PortableField {
   val UseDefaults: AnyRef = new UseDefaults
 
   /** Defines a default for a field value, used when copied from UseDefaults. */
-  def default[T](value: => T): PortableField[T] = new Getter[T] {
+  def default[T](value: => T): PortableField[T] = new SingleGetter[T] {
     def getter = { case _: UseDefaults => Some(value) }
 
     override def toString = "default(" + value + ")"

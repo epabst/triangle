@@ -13,7 +13,7 @@ import Converter._
 
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
-  object LengthField extends Getter[Int] {
+  object LengthField extends SingleGetter[Int] {
     def getter = { case s: String => s.length }
   }
 
@@ -36,7 +36,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must happen if getter and setter are applicable") {
         val stringField = default("Hello") + mapField("greeting")
         val map = mutable.Map[String,Any]("greeting" -> "Hola")
-        stringField.getter(PortableField.UseDefaults) must be (Some("Hello"))
+        stringField.getValue(PortableField.UseDefaults) must be (Some("Hello"))
         stringField.copy(PortableField.UseDefaults, map)
         map.get("greeting") must be (Some("Hello"))
       }
@@ -55,8 +55,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("default") {
       it("must only work on PortableField.UseDefaults") {
         val stringField = default("Hello")
-        stringField.getter.isDefinedAt(List("bogus list")) must be (false)
-        stringField.getter(PortableField.UseDefaults) must be (Some("Hello"))
+        stringField.getterFromItem.isDefinedAt(GetterInput.single(List("bogus list"))) must be (false)
+        stringField.getterFromItem(GetterInput.single(PortableField.UseDefaults)) must be (Some("Hello"))
       }
     }
 
@@ -80,7 +80,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must remove a value from a mutable.Map") {
         val stringField = mapField[String]("greeting")
         val map = mutable.Map("greeting" -> "Hola")
-        stringField.getter(mutable.Map[String,Any]()) must be (None)
+        stringField.getValue(mutable.Map[String,Any]()) must be (None)
         stringField.copy(mutable.Map[String,Any](), map)
         map.contains("greeting") must be (false)
       }
@@ -115,7 +115,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("copyFrom") {
       it("must return a working PortableValue if getter isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
-        stringField.getter(PortableField.UseDefaults) must be (Some("Hello"))
+        stringField.getValue(PortableField.UseDefaults) must be (Some("Hello"))
         val portableValue: PortableValue = stringField.copyFrom(PortableField.UseDefaults)
         portableValue must not(be(null))
 
@@ -194,7 +194,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
 
       it("must gracefully handle a non-list") {
-        field.getter.isDefinedAt("hello") must be (false)
+        field.getterFromItem.isDefinedAt(GetterInput.single("hello")) must be (false)
       }
     }
 
@@ -322,7 +322,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     it("must support easily specifying a getter as a partial function") {
-      val field = Getter[Int] { case subject: AnyRef => 3 }
+      val field = Getter.single[Int] { case subject: AnyRef => 3 }
       field("hello") must be (3)
     }
 
@@ -357,7 +357,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
   describe("&&") {
     it("must extract both values") {
-      object FirstLetter extends Getter[Char] {
+      object FirstLetter extends SingleGetter[Char] {
         def getter = { case s: String => s.head }
       }
       val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
