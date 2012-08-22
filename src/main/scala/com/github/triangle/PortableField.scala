@@ -65,7 +65,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /** A setter that also has access to some items such as context that may be helpful when setting. */
   def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
-    case (subject, _) if setter.isDefinedAt(subject) => v => setter(subject)(v)
+    case (subject, _) if setter.isDefinedAt(subject) => setter(subject)
   }
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
@@ -122,7 +122,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /** A transformer that also has access to some items such as context that may be helpful when transforming. */
   def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
-    case (subject, _) if transformer.isDefinedAt(subject) => v => transformer[S](subject)(v)
+    case (subject, _) if transformer.isDefinedAt(subject) => transformer[S](subject)
   }
 
   //inherited
