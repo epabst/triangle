@@ -61,53 +61,68 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def unapply(subject: AnyRef): Option[Option[T]] = unapply(GetterInput.single(subject))
 
   /** PartialFunction for setting an optional value in an AnyRef. */
+  @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
   def setter: PartialFunction[AnyRef,Option[T] => Unit]
 
   /** A setter that also has access to some items such as context that may be helpful when setting. */
+  @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
   def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
-    case (subject, _) if setter.isDefinedAt(subject) => setter(subject)
+    case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
+      v => updater(UpdaterInput(subject, v, context))
   }
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
     * @return true if any were successful
     */
+  @deprecated("use updateWithValue")
   def setValue(subject: AnyRef, value: Option[T]): Boolean = setValue(subject, value, GetterInput.empty)
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
     * @param items optional extra items usable by the setterUsingItems
     * @return true if any were successful
     */
-  @deprecated("use GetterInput instead of List[AnyRef]")
+  @deprecated("use updateWithValue with a GetterInput instead of List[AnyRef]")
   def setValue(subject: AnyRef, value: Option[T], items: List[AnyRef]): Boolean = {
     setValue(subject, value, GetterInput(items))
   }
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
-    * @param items optional extra items usable by the setterUsingItems
+    * @param context optional extra items usable by the setterUsingItems
     * @return true if any were successful
     */
-  def setValue(subject: AnyRef, value: Option[T], items: GetterInput): Boolean = {
-    val defined = setterUsingItems.isDefinedAt(subject, items)
-    if (defined) setterUsingItems(subject, items)(value)
-    else debug("Unable to set value " + value + " into " + subject + " for field " + this + " with items " + items + ".")
+  @deprecated("use updateWithValue")
+  def setValue(subject: AnyRef, value: Option[T], context: GetterInput): Boolean = {
+    val updaterInput = UpdaterInput(subject, value, context)
+    val defined = updater.isDefinedAt(updaterInput)
+    if (defined) updater(updaterInput)
+    else debug("Unable to update " + subject + " with value " + value + " for field " + this + " with context " + context + ".")
     defined
   }
 
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
+  @deprecated("use updateWithValue(initial, value, GetterInput(items))")
   def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: List[AnyRef]): S =
-    transformWithValue(initial, value, GetterInput(items))
+    updateWithValue(initial, value, GetterInput(items))
 
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
     */
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: GetterInput = GetterInput.empty): S = {
-    val defined = transformerUsingItems[S].isDefinedAt(initial, items)
+  @deprecated("use updateWithValue(initial, value, context)")
+  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], context: GetterInput = GetterInput.empty): S =
+    updateWithValue(initial, value, context)
+
+  /** Updates the {{{initial}}} subject using the {{{value}}} for this field and some context.
+    * @return the updated subject, which could be the initial instance
+    */
+  def updateWithValue[S <: AnyRef](initial: S, value: Option[T], context: GetterInput = GetterInput.empty): S = {
+    val updaterInput = UpdaterInput(initial, value, context)
+    val defined = updater[S].isDefinedAt(updaterInput)
     if (defined) {
-      transformerUsingItems[S].apply((initial, items))(value)
+      updater(updaterInput)
     } else {
-      debug("Unable to transform " + initial + " with value " + value + " for field " + this + " with items " + items + ".")
+      debug("Unable to update " + initial + " with value " + value + " for field " + this + " with context " + context + ".")
       initial
     }
   }
@@ -118,9 +133,26 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * Note: Implementations usually must specify the return type to compile properly
     * The parameter is the subject to be transformed, whether immutable or mutable
     */
+  @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
   def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
 
+  /*
+   * PartialFunction for updating an AnyRef using an optional value and context.
+   * {{{updater(UpdaterInput(foo, value, GetterInput(...))}}} should return an updated version of foo
+   * (which could be the same instance if mutable).
+   * Note: Implementations usually must specify the return type to compile properly
+   * The parameter's subject is what will be updated, whether immutable or mutable.
+   * The return value is ignored if the subject is mutable (and presumably updated in place).
+   */
+  // todo move the implementation into subclasses that define transformerUsingItems or transformer
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+    case UpdaterInput(subject, valueOpt, context) if transformerUsingItems.isDefinedAt((subject, context))=>
+      transformerUsingItems((subject, context)).apply(valueOpt)
+  }
+
   /** A transformer that also has access to some items such as context that may be helpful when transforming. */
+  @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
+  // todo move into subclasses that define transformer
   def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
     case (subject, _) if transformer.isDefinedAt(subject) => transformer[S](subject)
   }
@@ -135,10 +167,10 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   def copyAndTransformWithItem[S <: AnyRef](input: GetterInput, initial: S): S = {
-    if (transformerUsingItems.isDefinedAt((initial, input))) {
+    if (updater.isDefinedAt(UpdaterInput(initial, input))) {
       copyFromItem(input).transform(initial, input)
     } else {
-      debug("Unable to " + PortableField.transform_with_forField_message(initial, input, this) + " because of transformer.")
+      debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of transformer.")
       initial
     }
   }
@@ -154,7 +186,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   override def copyFromItem(input: GetterInput, to: AnyRef) {
-    if (setterUsingItems.isDefinedAt((to, input))) {
+    if (updater.isDefinedAt(UpdaterInput(to, input))) {
       copyFromItem(input).copyTo(to, input)
     } else {
       debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")
@@ -289,8 +321,8 @@ object PortableField {
   private[triangle] def from_to_for_field_message(from: AnyRef, to: AnyRef, field: BaseField): String =
     " from " + truncate(from) + " to " + truncate(to) + " for field " + truncate(field)
 
-  private[triangle] def transform_with_forField_message(initial: AnyRef, data: Any, field: BaseField): String =
-    "transform " + truncate(initial) + " with " + truncate(data) + " for field " + truncate(field)
+  private[triangle] def update_with_forField_message(initial: AnyRef, data: Any, field: BaseField): String =
+    "update " + truncate(initial) + " with " + truncate(data) + " for field " + truncate(field)
 
   private[triangle] def truncate(any: Any): String = {
     val stripStrings = Option(any).collect { case ref: AnyRef => ref.getClass.getPackage.getName + "." }

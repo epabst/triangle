@@ -13,7 +13,16 @@ trait PortableValue {
     * @param contextItems a List of items that may be used by PortableField.transformerUsingItems.
     * @return the transformed subject, which could be the initial instance
     */
-  def transform[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S
+  @deprecated("use update(initial, contextItems)")
+  def transform[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S =
+    update(initial, contextItems)
+
+  /**
+   * Updates the {{{initial}}} subject using this value.
+   * @param context items that may be used by PortableField.transformerUsingItems.
+   * @return the transformed subject, which could be the initial instance
+   */
+  def update[S <: AnyRef](initial: S, context: GetterInput = GetterInput.empty): S
 
   /** Returns the value contained in this value for the given PortableField. */
   def get[T](field: PortableField[T]): Option[T]
@@ -27,24 +36,24 @@ class PortableValue1[T](field: PortableField[T], value: Option[T]) extends Tuple
   }
 
   def copyTo(to: AnyRef, getterInput: GetterInput = GetterInput.empty) {
-    if (field.setterUsingItems.isDefinedAt((to, getterInput))) {
+    if (field.updater.isDefinedAt(UpdaterInput(to, getterInput))) {
       copyToDefinedAt(to, getterInput)
     } else {
-      debug("Unable to copy" + PortableField.from_to_for_field_message(value, to, field)  + " due to setter.")
+      debug("Unable to copy" + PortableField.from_to_for_field_message(value, to, field)  + " due to updater.")
     }
   }
 
   private def copyToDefinedAt(to: AnyRef, getterInput: GetterInput) {
     trace("Copying " + value + PortableField.from_to_for_field_message(value, to, field))
-    field.setterUsingItems((to, getterInput))(value)
+    field.updater(UpdaterInput(to, value, getterInput))
   }
 
-  def transform[S <: AnyRef](initial: S, getterInput: GetterInput = GetterInput.empty): S = {
-    if (field.transformerUsingItems.isDefinedAt((initial, getterInput))) {
-      trace("About to " + PortableField.transform_with_forField_message(initial, "value " + value, field))
-      field.transformerUsingItems[S](initial, getterInput)(value)
+  def update[S <: AnyRef](initial: S, getterInput: GetterInput = GetterInput.empty): S = {
+    if (field.updater.isDefinedAt(UpdaterInput(initial, getterInput))) {
+      trace("About to " + PortableField.update_with_forField_message(initial, "value " + value, field))
+      field.updater(UpdaterInput(initial, value, getterInput))
     } else {
-      debug("Unable to " + PortableField.transform_with_forField_message(initial, "value " + value, field) + " due to transformer")
+      debug("Unable to " + PortableField.update_with_forField_message(initial, "value " + value, field) + " due to updater")
       initial
     }
   }
@@ -65,7 +74,7 @@ class PortableValueSeq(portableValues: Traversable[PortableValue]) extends Porta
     portableValues.foreach(_.copyTo(to, contextItems))
   }
 
-  def transform[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S = {
+  def update[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S = {
     debug("Transforming " + initial + " using PortableValue with " + portableValues)
     portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject, contextItems))
   }

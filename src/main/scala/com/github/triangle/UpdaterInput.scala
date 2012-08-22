@@ -10,4 +10,11 @@ package com.github.triangle
  *         Date: 8/16/12
  *         Time: 8:41 AM
  */
-case class UpdaterInput[S <: AnyRef,T](subject: S, valueOpt: Option[T], context: GetterInput)
+case class UpdaterInput[S <: AnyRef,+T](subject: S, valueOpt: Option[T], context: GetterInput = GetterInput.empty)
+
+object UpdaterInput {
+  def apply[S <: AnyRef](subject: S, context: GetterInput): UpdaterInput[S,Nothing] =
+    UpdaterInput(subject, undeterminedValue, context)
+
+  def undeterminedValue: Option[Nothing] = None
+}
