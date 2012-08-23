@@ -73,7 +73,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
 
   it("must unwrap the AnyRef for setterUsingItem") {
     val field = new PartialDelegatingField[Int] {
-      protected def delegate = fieldWithSetterUsingItems
+      protected def delegate = fieldWithSetterUsingContext
 
       protected def subjectGetter = {
         case AnyRefHolder(ref) => ref

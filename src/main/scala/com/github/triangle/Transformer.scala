@@ -1,14 +1,10 @@
 package com.github.triangle
 
-trait NoSetter[T] extends PortableField[T] {
-  def setter = PortableField.emptyPartialFunction
-}
-
-private[triangle] trait NoTransformer[T] extends NoSetter[T] {
+private[triangle] trait NoTransformer[T] extends PortableField[T] {
   def updater[S <: AnyRef] = PortableField.emptyPartialFunction
 }
 
-trait Transformer[T] extends NoGetter[T] with NoSetter[T]
+trait Transformer[T] extends NoGetter[T]
 
 object Transformer {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {

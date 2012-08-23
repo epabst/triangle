@@ -62,13 +62,16 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /** PartialFunction for setting an optional value in an AnyRef. */
   @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
-  def setter: PartialFunction[AnyRef,Option[T] => Unit]
+  final def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
+    case subject if updater.isDefinedAt(UpdaterInput(subject, GetterInput.empty)) =>
+      valueOpt => updater(UpdaterInput(subject, valueOpt))
+  }
 
   /** A setter that also has access to some items such as context that may be helpful when setting. */
   @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
-  def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
+  final def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
     case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
-      v => updater(UpdaterInput(subject, v, context))
+      valueOpt => updater(UpdaterInput(subject, valueOpt, context))
   }
 
   /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
@@ -213,35 +216,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
         }
       }
 
-      /** Combines the two setters, calling only applicable ones (not just the first though). */
-      def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
-        case x if self.setter.isDefinedAt(x) || other.setter.isDefinedAt(x) => { value =>
-          val definedFields = List(self, other).view.filter(_.setter.isDefinedAt(x))
-          if (definedFields.isEmpty) throw new MatchError("setter in " + PortableField.this)
-          else definedFields.foreach(_.setter(x)(value))
-        }
-      }
-
-      /** Combines the two setterUsingItems, calling only applicable ones (not just the first though). */
-      override def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
-        case x if self.setterUsingItems.isDefinedAt(x) || other.setterUsingItems.isDefinedAt(x) => { value =>
-          val definedFields = List(self, other).view.filter(_.setterUsingItems.isDefinedAt(x))
-          if (definedFields.isEmpty) throw new MatchError("setterUsingItems in " + PortableField.this)
-          else definedFields.foreach(_.setterUsingItems(x)(value))
-        }
-      }
-
+      /** Combines the two updaters, calling only applicable ones (not just the first though). */
       override def updater[S <: AnyRef] = {
         case input @ UpdaterInput(subject, valueOpt, context) if self.updater.isDefinedAt(input) || other.updater.isDefinedAt(input) =>
           val definedFields = List(self, other).filter(_.updater.isDefinedAt(input))
           definedFields.foldLeft(subject)((subject, field) => field.updater(input))
-      }
-
-      override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
-        case x if self.transformerUsingItems.isDefinedAt(x) || other.transformerUsingItems.isDefinedAt(x) => { value =>
-          val definedFields = List(self, other).filter(_.transformerUsingItems.isDefinedAt(x))
-          definedFields.foldLeft(x)((soFar, field) => (field.transformerUsingItems[S](soFar)(value), soFar._2))._1
-        }
       }
 
       override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {

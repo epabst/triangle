@@ -17,13 +17,7 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 
   override def getterFromItem = delegate.getterFromItem
 
-  def setter = delegate.setter
-
-  override def setterUsingItems = delegate.setterUsingItems
-
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updater
-
-  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = delegate.transformerUsingItems
 }
 
 /** a PortableField[T] that wraps another for use with creating field objects.
@@ -33,7 +27,8 @@ class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T
   override def toString = delegate.toString
 }
 
-trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsingSetter[T] {
+/** A PortableField that delegates to another field that modifies part of the subject, as defined by {{{subjectGetter}}}. */
+trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSetter[T] {
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
 
@@ -42,13 +37,10 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with TransformerUsi
       delegate.getterFromItem(GetterInput(input.items.collect(subjectGetter)))
   }
 
-  override def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
-    case subject if subjectGetter.isDefinedAt(subject) &&
-      delegate.setter.isDefinedAt(subjectGetter(subject)) => delegate.setter(subjectGetter(subject))
-  }
-
-  override def setterUsingItems = {
-    case (subject, items) if subjectGetter.isDefinedAt(subject) &&
-      delegate.setterUsingItems.isDefinedAt((subjectGetter(subject), items)) => delegate.setterUsingItems((subjectGetter(subject), items))
+  /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
+  def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+    case input @ UpdaterInput(subject, valueOpt, context)
+      if subjectGetter.isDefinedAt(subject) && delegate.updater.isDefinedAt(input.copy(subject = subjectGetter(subject))) =>
+        delegate.updater(input.copy(subject = subjectGetter(subject)))
   }
 }

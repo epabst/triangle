@@ -61,14 +61,9 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
 
   def updater[T](splitter: T => ValuesTuple): NoGetter[T] = {
     new NoGetter[T] with TupleField[T] {
-      override def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+      def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
         case input @ UpdaterInput(subject, valueOpt, _) if productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue)) =>
           transformWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
-      }
-
-      def setter = {
-        case ref if productIterator.forall(_.setter.isDefinedAt(ref)) => (valueOpt: Option[T]) =>
-          setValues(ref, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
       }
     }
   }

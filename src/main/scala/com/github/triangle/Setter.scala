@@ -1,51 +1,47 @@
 package com.github.triangle
 
-trait TransformerUsingSetter[T] extends PortableField[T] {
+trait UpdaterUsingSetter[T] extends PortableField[T] {
+  /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
+  //todo rename to setter
+  def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
+
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case UpdaterInput(subject, valueOpt, context) if setter.isDefinedAt(subject)=>
-      setter(subject)(valueOpt); subject
-  }
-
-  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
-    case subjectAndItems if setterUsingItems.isDefinedAt(subjectAndItems) => { value =>
-      setterUsingItems(subjectAndItems).apply(value); subjectAndItems._1
-    }
+    case input @ UpdaterInput(subject, valueOpt, context) if setterUsingInput.isDefinedAt(input)=>
+      setterUsingInput(input); subject
   }
 }
 
-trait Setter[T] extends NoGetter[T] with TransformerUsingSetter[T]
-
-trait SetterUsingItems[T] extends Setter[T] {
-  override def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]
-
-  def setter = {
-    case context if setterUsingItems.isDefinedAt((context, GetterInput.empty)) => setterUsingItems((context, GetterInput.empty))
-  }
-}
+trait Setter[T] extends NoGetter[T] with UpdaterUsingSetter[T]
 
 /** [[com.github.triangle.PortableField]] support for setting a value if {{{subject}}} is of type S.
   * This is a trait so that it can be mixed with FieldGetter.
   * S is the Writable type to put the value into
   */
-trait FieldSetter[S <: AnyRef,T] extends SetterUsingItems[T] with FieldWithSubject[S,T] with TransformerUsingSetter[T] with Logging {
+trait FieldSetter[S <: AnyRef,T] extends Setter[T] with FieldWithSubject[S,T] with Logging {
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
   @deprecated("use GetterInput instead of List[AnyRef]")
   def set(subject: S, value: Option[T], items: List[AnyRef])
 
-  def set(subject: S, value: Option[T], items: GetterInput) {
-    set(subject, value, items.items.toList)
+  def set(subject: S, value: Option[T], context: GetterInput) {
+    set(subject, value, context.items.toList)
   }
 
-  override def setterUsingItems = {
-    case (subject, input) if subjectManifest.erasure.isInstance(subject) => set(subject.asInstanceOf[S], _, input)
+  def setterUsingInput[S1 <: AnyRef]: PartialFunction[UpdaterInput[S1,T],Unit] = {
+    case UpdaterInput(subject, valueOpt, context) if subjectManifest.erasure.isInstance(subject) =>
+     set(subject.asInstanceOf[S], valueOpt, context)
   }
 }
 
 object Setter {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
-    def setter = body
+
+    /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
+    def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+      case UpdaterInput(subject, valueOpt, _) if body.isDefinedAt(subject) =>
+        body(subject)(valueOpt)
+    }
   }
 
   /** Defines setter field for a mutable type with Option as the value type. */
@@ -82,8 +78,11 @@ object Setter {
 }
 
 object SetterUsingItems {
-  def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]): Setter[T] = new SetterUsingItems[T] {
-    override def setterUsingItems = body
+  def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]): Setter[T] = new Setter[T] {
+    def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+      case UpdaterInput(subject, valueOpt, context) if body.isDefinedAt((subject, context)) =>
+        body((subject, context)).apply(valueOpt)
+    }
   }
 
   /** Defines setter field for a mutable type with Option as the value type. */
