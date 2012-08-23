@@ -117,13 +117,20 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * @return the updated subject, which could be the initial instance
     */
   def updateWithValue[S <: AnyRef](initial: S, value: Option[T], context: GetterInput = GetterInput.empty): S = {
-    val updaterInput = UpdaterInput(initial, value, context)
+    update(UpdaterInput(initial, value, context))
+  }
+
+  /**
+   * Updates {{{updaterInput}}} for this field.
+   * @return the updated subject, which could be the initial instance
+   */
+  def update[S <: AnyRef](updaterInput: UpdaterInput[S,T]): S = {
     val defined = updater[S].isDefinedAt(updaterInput)
     if (defined) {
       updater(updaterInput)
     } else {
-      debug("Unable to update " + initial + " with value " + value + " for field " + this + " with context " + context + ".")
-      initial
+      debug("Unable to update " + updaterInput.subject + " with value " + updaterInput.valueOpt + " for field " + this + " with context " + updaterInput.context + ".")
+      updaterInput.subject
     }
   }
 
@@ -134,7 +141,11 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * The parameter is the subject to be transformed, whether immutable or mutable
     */
   @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
-  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S]
+  //todo delete
+  final def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
+    case subject if updater.isDefinedAt(UpdaterInput(subject, GetterInput.empty)) =>
+      valueOpt => updater(UpdaterInput(subject, GetterInput.empty))
+  }
 
   /*
    * PartialFunction for updating an AnyRef using an optional value and context.
@@ -144,17 +155,14 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * The parameter's subject is what will be updated, whether immutable or mutable.
    * The return value is ignored if the subject is mutable (and presumably updated in place).
    */
-  // todo move the implementation into subclasses that define transformerUsingItems or transformer
-  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case UpdaterInput(subject, valueOpt, context) if transformerUsingItems.isDefinedAt((subject, context))=>
-      transformerUsingItems((subject, context)).apply(valueOpt)
-  }
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
   /** A transformer that also has access to some items such as context that may be helpful when transforming. */
   @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
   // todo move into subclasses that define transformer
   def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
-    case (subject, _) if transformer.isDefinedAt(subject) => transformer[S](subject)
+    case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
+      valueOpt => updater[S](UpdaterInput(subject, valueOpt, context))
   }
 
   //inherited
@@ -223,11 +231,10 @@ trait PortableField[T] extends BaseField with Logging { self =>
         }
       }
 
-      def transformer[S <: AnyRef] = {
-        case subject if self.transformer.isDefinedAt(subject) || other.transformer.isDefinedAt(subject) => { value =>
-          val definedFields = List(self, other).filter(_.transformer.isDefinedAt(subject))
-          definedFields.foldLeft(subject)((subject, field) => field.transformer[S](subject)(value))
-        }
+      override def updater[S <: AnyRef] = {
+        case input @ UpdaterInput(subject, valueOpt, context) if self.updater.isDefinedAt(input) || other.updater.isDefinedAt(input) =>
+          val definedFields = List(self, other).filter(_.updater.isDefinedAt(input))
+          definedFields.foldLeft(subject)((subject, field) => field.updater(input))
       }
 
       override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {

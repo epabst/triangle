@@ -5,15 +5,16 @@ trait NoSetter[T] extends PortableField[T] {
 }
 
 private[triangle] trait NoTransformer[T] extends NoSetter[T] {
-  def transformer[S <: AnyRef] = PortableField.emptyPartialFunction
+  def updater[S <: AnyRef] = PortableField.emptyPartialFunction
 }
 
 trait Transformer[T] extends NoGetter[T] with NoSetter[T]
 
 object Transformer {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
-    def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-      case subject if body.isDefinedAt(subject) => value => body(subject)(value).asInstanceOf[S]
+    def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+      case UpdaterInput(subject, valueOpt, context) if body.isDefinedAt(subject)=>
+        body(subject)(valueOpt).asInstanceOf[S]
     }
   }
 
@@ -22,9 +23,9 @@ object Transformer {
     */
   def apply[S <: AnyRef,T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): PortableField[T] =
     new Transformer[T] with SubjectField {
-      def transformer[S1]: PartialFunction[S1,Option[T] => S1] = {
-        case subject if subjectManifest.erasure.isInstance(subject) => value =>
-          body(subject.asInstanceOf[S])(value).asInstanceOf[S1]
+      def updater[S1 <: AnyRef]: PartialFunction[UpdaterInput[S1,T],S1] = {
+        case UpdaterInput(subject, valueOpt, context) if subjectManifest.erasure.isInstance(subject) =>
+          body(subject.asInstanceOf[S])(valueOpt).asInstanceOf[S1]
       }
 
       def subjectManifest = _subjectManifest
@@ -41,8 +42,8 @@ object Transformer {
   def apply[S <: AnyRef,T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =
     Transformer((subject: S) => { (valueOpt: Option[T]) =>
       valueOpt match {
-        case Some(value) => body(subject)(value).asInstanceOf[S]
-        case None => clearer(subject).asInstanceOf[S]
+        case Some(value) => body(subject)(value)
+        case None => clearer(subject)
       }
     })
 }
@@ -50,8 +51,9 @@ object Transformer {
 trait TransformerUsingItems[T] extends Transformer[T] {
   override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S]
 
-  def transformer[S <: AnyRef] = {
-    case context if transformerUsingItems.isDefinedAt((context, GetterInput.empty)) => transformerUsingItems[S]((context, GetterInput.empty))
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+    case UpdaterInput(subject, valueOpt, context) if transformerUsingItems.isDefinedAt((subject, context))=>
+      transformerUsingItems((subject, context)).apply(valueOpt)
   }
 }
 

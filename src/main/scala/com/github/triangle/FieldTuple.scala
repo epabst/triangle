@@ -23,7 +23,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S
 
   //this is only here to help the IDE to infer the type concretely
-  override def productIterator: Iterator[PortableField[_]] = super.productIterator
+  override def productIterator: Iterator[PortableField[_]] = super.productIterator.asInstanceOf[Iterator[PortableField[_]]]
 
   trait TupleField[T] extends PortableField[T] { selfField =>
     /** Allows chaining such as {{{FieldTuple(...).getter(...).withTransformer(...)}}}. */
@@ -54,11 +54,16 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   }
 
   /** Creates a Transformer and Setter PortableField that accepts a composite type T and a splitter function. */
+  @deprecated("use updater(splitter)")
   def transformer[T](splitter: T => ValuesTuple): NoGetter[T] = {
+    updater(splitter)
+  }
+
+  def updater[T](splitter: T => ValuesTuple): NoGetter[T] = {
     new NoGetter[T] with TupleField[T] {
-      def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-        case ref if productIterator.forall(_.transformer.isDefinedAt(ref)) => (valueOpt: Option[T]) =>
-          transformWithValues(ref, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
+      override def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+        case input @ UpdaterInput(subject, valueOpt, _) if productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue)) =>
+          transformWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
       }
 
       def setter = {

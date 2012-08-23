@@ -10,7 +10,11 @@ package com.github.triangle
  *         Date: 8/16/12
  *         Time: 8:41 AM
  */
-case class UpdaterInput[S <: AnyRef,+T](subject: S, valueOpt: Option[T], context: GetterInput = GetterInput.empty)
+case class UpdaterInput[S <: AnyRef,+T](subject: S, valueOpt: Option[T], context: GetterInput = GetterInput.empty) {
+  def withValue[T2](newValueOpt: Option[T2]): UpdaterInput[S,T2] = copy(valueOpt = newValueOpt)
+
+  lazy val withUndeterminedValue = withValue(UpdaterInput.undeterminedValue)
+}
 
 object UpdaterInput {
   def apply[S <: AnyRef](subject: S, context: GetterInput): UpdaterInput[S,Nothing] =

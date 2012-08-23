@@ -1,8 +1,9 @@
 package com.github.triangle
 
 trait TransformerUsingSetter[T] extends PortableField[T] {
-  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-    case subject if setter.isDefinedAt(subject) => { value => setter(subject).apply(value); subject }
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
+    case UpdaterInput(subject, valueOpt, context) if setter.isDefinedAt(subject)=>
+      setter(subject)(valueOpt); subject
   }
 
   override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {

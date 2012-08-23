@@ -21,7 +21,7 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
 
   override def setterUsingItems = delegate.setterUsingItems
 
-  def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = delegate.transformer
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updater
 
   override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = delegate.transformerUsingItems
 }
