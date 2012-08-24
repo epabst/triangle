@@ -34,7 +34,7 @@ trait BaseField {
   def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copy(GetterInput(fromItems), to) }
 
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
-  def copy(fromItems: GetterInput, to: AnyRef) { copyFrom(fromItems).copyTo(to, fromItems) }
+  def copy(fromItems: GetterInput, to: AnyRef) { copyFrom(fromItems).update(to, fromItems) }
 
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance

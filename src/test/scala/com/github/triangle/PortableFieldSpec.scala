@@ -120,7 +120,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         portableValue must not(be(null))
 
         val map = mutable.Map[String,Any]()
-        portableValue.copyTo(map)
+        portableValue.update(map)
         map.get("greeting") must be (Some("Hello"))
         portableValue.get(stringField) must be (Some("Hello"))
       }
@@ -133,7 +133,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         portableValue.get(default("Hi")) must be (None)
 
         val map = mutable.Map[String,Any]("greeting" -> "obsolete value")
-        portableValue.copyTo(map)
+        portableValue.update(map)
         map.get("greeting") must be (None)
       }
     }

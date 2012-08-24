@@ -213,7 +213,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   //inherited
   override def copy(input: GetterInput, to: AnyRef) {
     if (updater.isDefinedAt(UpdaterInput(to, input))) {
-      copyFrom(input).copyTo(to, input)
+      copyFrom(input).update(to, input)
     } else {
       debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")
     }
