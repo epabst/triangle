@@ -89,14 +89,14 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must unwrap a Some when putting it into a mutable.Map") {
         val stringField = mapField[String]("greeting")
         val map = mutable.Map.empty[String,String]
-        stringField.setValue(map, Some("Hello"))
+        stringField.updateWithValue(map, Some("Hello"))
         map.toMap must be (Map("greeting" -> "Hello"))
       }
 
       it("must not add to a mutable.Map if value is None") {
         val stringField = mapField[String]("greeting")
         val map = mutable.Map.empty[String,String]
-        stringField.setValue(map, None)
+        stringField.updateWithValue(map, None)
         map.toMap must be (Map.empty[String,String])
       }
 
@@ -203,7 +203,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must call clearer if no value") {
         val stringField = Setter({ (b: mutable.Buffer[String]) => (v: String) => b += v; Unit }, (b: mutable.Buffer[String]) => b.clear())
         val buffer = mutable.Buffer("hello")
-        stringField.setValue(buffer, None)
+        stringField.updateWithValue(buffer, None)
         buffer must be ('empty)
       }
     }
@@ -214,7 +214,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         field.getValue(Map("amountString" -> "12.34")) must be (Some(12.34))
 
         val map = mutable.Map[String,Any]()
-        field.setValue(map, Some(16))
+        field.updateWithValue(map, Some(16))
         map("amountString") must be ("16.00")
       }
 
@@ -232,7 +232,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         field.getValue(Map("amountString" -> "12.34")) must be (Some(12.34))
 
         val map = mutable.Map[String,Any]()
-        field.setValue(map, Some(16))
+        field.updateWithValue(map, Some(16))
         map("amountString") must be ("16.00")
       }
 
@@ -330,7 +330,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     it("must support easily specifying a setter as a partial function") {
       val field = Setter[Int] { case subject: mutable.Buffer[Int] => _.foreach(value => subject += value) }
       val buffer = mutable.Buffer[Int](1, 2)
-      field.setValue(buffer, Some(3))
+      field.updateWithValue(buffer, Some(3))
       buffer.toList must be (List(1, 2, 3))
     }
 
@@ -338,7 +338,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       val field = Transformer[Int] {
         case subject: List[Int] => value => value.map(_ +: subject).getOrElse(subject)
       }
-      field.transformWithValue(List(2, 3), Some(1)) must be (List(1, 2, 3))
+      field.updateWithValue(List(2, 3), Some(1)) must be (List(1, 2, 3))
     }
 
     describe("Transformer") {

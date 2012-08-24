@@ -49,7 +49,8 @@ object Transformer {
 
 @deprecated("use Updater")
 trait TransformerUsingItems[T] extends Transformer[T] {
-  override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S]
+  /** An updater that also has access to some items such as context that may be helpful when transforming. */
+  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S]
 
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
     case UpdaterInput(subject, valueOpt, context) if transformerUsingItems.isDefinedAt((subject, context))=>

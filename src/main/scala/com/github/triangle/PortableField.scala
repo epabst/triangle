@@ -74,62 +74,6 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def unapply(subject: AnyRef): Option[Option[T]] = unapply(GetterInput.single(subject))
 
-  /** PartialFunction for setting an optional value in an AnyRef. */
-  @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
-  final def setter: PartialFunction[AnyRef,Option[T] => Unit] = {
-    case subject if updater.isDefinedAt(UpdaterInput(subject, GetterInput.empty)) =>
-      valueOpt => updater(UpdaterInput(subject, valueOpt))
-  }
-
-  /** A setter that also has access to some items such as context that may be helpful when setting. */
-  @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
-  final def setterUsingItems: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit] = {
-    case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
-      valueOpt => updater(UpdaterInput(subject, valueOpt, context))
-  }
-
-  /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
-    * @return true if any were successful
-    */
-  @deprecated("use updateWithValue")
-  def setValue(subject: AnyRef, value: Option[T]): Boolean = setValue(subject, value, GetterInput.empty)
-
-  /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
-    * @param items optional extra items usable by the setterUsingItems
-    * @return true if any were successful
-    */
-  @deprecated("use updateWithValue with a GetterInput instead of List[AnyRef]")
-  def setValue(subject: AnyRef, value: Option[T], items: List[AnyRef]): Boolean = {
-    setValue(subject, value, GetterInput(items))
-  }
-
-  /** Sets a value in {{{subject}}} by using all embedded PortableFields that can handle it.
-    * @param context optional extra items usable by the setterUsingItems
-    * @return true if any were successful
-    */
-  @deprecated("use updateWithValue")
-  def setValue(subject: AnyRef, value: Option[T], context: GetterInput): Boolean = {
-    val updaterInput = UpdaterInput(subject, value, context)
-    val defined = updater.isDefinedAt(updaterInput)
-    if (defined) updater(updaterInput)
-    else debug("Unable to update " + subject + " with value " + value + " for field " + this + " with context " + context + ".")
-    defined
-  }
-
-  /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
-    * @return the transformed subject, which could be the initial instance
-    */
-  @deprecated("use updateWithValue(initial, value, GetterInput(items))")
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], items: List[AnyRef]): S =
-    updateWithValue(initial, value, GetterInput(items))
-
-  /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
-    * @return the transformed subject, which could be the initial instance
-    */
-  @deprecated("use updateWithValue(initial, value, context)")
-  def transformWithValue[S <: AnyRef](initial: S, value: Option[T], context: GetterInput = GetterInput.empty): S =
-    updateWithValue(initial, value, context)
-
   /** Updates the {{{initial}}} subject using the {{{value}}} for this field and some context.
     * @return the updated subject, which could be the initial instance
     */
@@ -160,18 +104,6 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * The return value is ignored if the subject is mutable (and presumably updated in place).
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
-
-  /** A updater that also has access to some items such as context that may be helpful when transforming. */
-  @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
-  // todo move into subclasses that define updater
-  def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
-    case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
-      valueOpt => updater[S](UpdaterInput(subject, valueOpt, context))
-  }
-
-  //inherited
-  @deprecated("use copyAndTransform")
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
 
   //inherited
   def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {

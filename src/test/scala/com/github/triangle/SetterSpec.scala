@@ -18,7 +18,7 @@ class SetterSpec extends Spec with MustMatchers {
     
     it("must allow using the items while setting") {
       val entity = new MyEntity()
-      stringField.setValue(entity, Some("James"), List("Bond", "007"))
+      stringField.updateWithValue(entity, Some("James"), GetterInput("Bond", "007"))
       entity.name must be ("James-Bond-007")
     }
 
@@ -27,8 +27,7 @@ class SetterSpec extends Spec with MustMatchers {
         case (e: MyEntity, input) if input.items.contains("Bond") => v => e.name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")
       }
       val entity = new MyEntity()
-      field.setValue(entity, Some("James"), List("Dean")) must be (false)
-      entity.name must be ("(none)")
+      field.updater.isDefinedAt(UpdaterInput(entity, Some("James"), GetterInput.single("Dean"))) must be (false)
     }
   }
 }

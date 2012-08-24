@@ -43,7 +43,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
       }
     }
     val holder = AnyRefHolder(mutable.Map.empty[String,Any])
-    field.setter.apply(holder)(Some(10))
+    field.updateWithValue(holder, Some(10))
     holder.ref.get("count") must be (Some(10))
   }
 
@@ -80,7 +80,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
       }
     }
     val holder = AnyRefHolder(new AtomicInteger(0))
-    field.setValue(holder, Some(10), List(Set(1,0,3)))
+    field.updateWithValue(holder, Some(10), GetterInput.single(Set(1,0,3)))
     holder.ref.get() must be (14)
   }
 }

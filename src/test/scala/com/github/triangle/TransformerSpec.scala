@@ -22,7 +22,7 @@ class TransformerSpec extends Spec with MustMatchers {
       TransformerUsingItems((e: MyEntity, input) => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")))
 
     it("must allow using the items while setting") {
-      val entity = stringField.transformWithValue(new MyEntity(), Some("James"), List("Bond", "007"))
+      val entity = stringField.updateWithValue(new MyEntity(), Some("James"), GetterInput("Bond", "007"))
       entity.name must be ("James-Bond-007")
     }
 
@@ -30,7 +30,7 @@ class TransformerSpec extends Spec with MustMatchers {
       val field: PortableField[String] = TransformerUsingItems[String] {
         case (e: MyEntity, input) if input.items.contains("Bond") => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", ""))
       }
-      val entity = field.transformWithValue(new MyEntity(), Some("James"), List("Dean"))
+      val entity = field.updateWithValue(new MyEntity(), Some("James"), GetterInput.single("Dean"))
       entity.name must be ("(none)")
     }
   }
