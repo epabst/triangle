@@ -45,7 +45,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * @throws NoSuchElementException if the value was None
     * @throws MatchError if subject is not an applicable type
     */
-  def apply(subject: AnyRef): T = getValue(subject).get
+  def getRequired(subject: AnyRef): T = getValue(subject).get
 
   /** An extractor from a GetterInput that matches the value as an Option.
     * Example: {{{case MyField(Some(string)) => ...}}}

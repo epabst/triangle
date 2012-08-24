@@ -25,12 +25,12 @@ class FieldListSpec extends BaseFieldContractSpec {
       //copy where only one field has an accessor
       fields.copy(PortableField.UseDefaults, map)
       map.contains("count") must be (true)
-      countField(map) must be (10)
+      countField.getValue(map) must be (Some(10))
       map.contains("price") must be (false)
 
       fields.copy(mutable.Map("price" -> 300.00), map)
       map.contains("price") must be (true)
-      priceField(map) must be (300.00)
+      priceField.getValue(map) must be (Some(300.00))
       //must have been overwritten because the Map didn't have it
       countField.getValue(map) must be (None)
     }
@@ -58,7 +58,7 @@ class FieldListSpec extends BaseFieldContractSpec {
       //copy where only one field has an accessor
       fields.copy(PortableField.UseDefaults, map)
       map.contains("count") must be (true)
-      countField(map) must be (10)
+      countField.getValue(map) must be (Some(10))
       map.contains("price") must be (false)
     }
 
