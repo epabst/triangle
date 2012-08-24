@@ -22,7 +22,7 @@ class FieldTupleSpec extends Spec with MustMatchers {
     it("must extract the field values") {
       val fieldTuple = FieldTuple(intField, stringField, doubleField)
       //use it to match a GetterInput
-      fieldTuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      fieldTuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (myInt, myString, myDouble) => {
           myInt must be (Some(10))
           myString must be (Some("Hello"))
@@ -30,7 +30,7 @@ class FieldTupleSpec extends Spec with MustMatchers {
         }
       }
       //use it external from the tuple itself
-      val (integer, string, double) = fieldTuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults))
+      val (integer, string, double) = fieldTuple.valuesTuple(GetterInput.single(PortableField.UseDefaults))
       integer must be (Some(10))
       string must be (Some("Hello"))
       double must be (Some(11.0))
@@ -38,92 +38,92 @@ class FieldTupleSpec extends Spec with MustMatchers {
 
     it("must work for tuple size of 2") {
       val tuple = FieldTuple(intField, stringField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello")) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 3") {
       val tuple = FieldTuple(intField, stringField, doubleField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello"), Some(11.0)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 4") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello")) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 5") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 6") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10), Some(11.0)) => "ok"; case _ => fail()
       }
     }
 
     it("must work for tuple size of 7") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField, intField)
-      tuple.valuesTupleFromItem(GetterInput.single(PortableField.UseDefaults)) match {
+      tuple.valuesTuple(GetterInput.single(PortableField.UseDefaults)) match {
         case (Some(10), Some("Hello"), Some(11.0), Some("Hello"), Some(10), Some(11.0), Some(10)) => "ok"; case _ => fail()
       }
     }
   }
 
-  describe("transformWithValues") {
+  describe("updateWithValues") {
     it("must work for tuple size of 2") {
       val tuple = FieldTuple(intField, stringField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"))) must
         be (Map("int" -> 2, "string" -> "hi"))
     }
 
     it("must work for tuple size of 3") {
       val tuple = FieldTuple(intField, stringField, doubleField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14))) must
         be (Map("int" -> 2, "string" -> "hi", "double" -> 3.14))
     }
 
     it("must work for tuple size of 4") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"))) must
         be (Map("int" -> 2, "string" -> "hi2", "double" -> 3.14))
     }
 
     it("must work for tuple size of 5") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3))) must
         be (Map("int" -> 3, "string" -> "hi2", "double" -> 3.14))
     }
 
     it("must work for tuple size of 6") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77))) must
         be (Map("int" -> 3, "string" -> "hi2", "double" -> 1.77))
     }
 
     it("must work for tuple size of 7") {
       val tuple = FieldTuple(intField, stringField, doubleField, stringField, intField, doubleField, intField)
-      tuple.transformWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77), Some(11))) must
+      tuple.updateWithValues(Map.empty[String,Any], (Some(2), Some("hi"), Some(3.14), Some("hi2"), Some(3), Some(1.77), Some(11))) must
         be (Map("int" -> 11, "string" -> "hi2", "double" -> 1.77))
     }
   }
 
-  describe("getter") {
-    val getter = FieldTuple(intField, stringField, doubleField).getter[IntStringDouble] {
+  describe("asGetter") {
+    val getter = FieldTuple(intField, stringField, doubleField).asGetter[IntStringDouble] {
       case (Some(int), Some(string), Some(double)) => Some(IntStringDouble(int, string, double))
       case _ => None
     }
 
-    it("should use each inner field's getter") {
+    it("should use each inner field's asGetter") {
       val map = Map("int" -> 5, "string" -> "Joe", "double" -> 0.1)
       getter.getValue(map) must be (Some(IntStringDouble(5, "Joe", 0.1)))
     }
@@ -135,29 +135,29 @@ class FieldTupleSpec extends Spec with MustMatchers {
       } must be (List(intField, doubleField))
     }
 
-    describe("withTransformer") {
-      val withTransformer = getter.withTransformer(v => FieldTuple.toTuple3OfSomes[Int,String,Double]((v.int, v.string, v.double)))
+    describe("withUpdater") {
+      val withUpdater = getter.withUpdater(v => FieldTuple.toTuple3OfSomes[Int,String,Double]((v.int, v.string, v.double)))
 
       it("must be supported") {
-        val map = withTransformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+        val map = withUpdater.updateWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
         map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
       }
 
       describe("deepCollect") {
         it("must only return each match once") {
-          withTransformer.deepCollect {
+          withUpdater.deepCollect {
             case f if f == intField => f
           } must be (List(intField))
         }
 
         it("must match the field itself") {
-          withTransformer.deepCollect {
-            case f if f == withTransformer => f
-          } must be (List(withTransformer))
+          withUpdater.deepCollect {
+            case f if f == withUpdater => f
+          } must be (List(withUpdater))
         }
 
-        it("must match the getter") {
-          withTransformer.deepCollect {
+        it("must match the asGetter") {
+          withUpdater.deepCollect {
             case f if f == getter => f
           } must be (List(getter))
         }
@@ -165,28 +165,28 @@ class FieldTupleSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("updater") {
-    val updaterField = FieldTuple(intField, stringField, doubleField).updater[IntStringDouble](v => (v.int, v.string, v.double))
+  describe("asUpdater") {
+    val updaterField = FieldTuple(intField, stringField, doubleField).asUpdater[IntStringDouble](v => (v.int, v.string, v.double))
 
     it("should use each inner field's updater") {
-      val map = updaterField.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+      val map = updaterField.updateWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
       map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
     }
 
     it("should use each inner field's updater when no value is provided") {
-      val map = updaterField.transformWithValue(Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1), None)
+      val map = updaterField.updateWithValue(Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1), None)
       map.toMap must be (Map.empty[String,Any])
     }
 
-    it("should use each inner field's setter") {
+    it("should use each inner field's updater for a mutable Map") {
       val map = mutable.Map.empty[String,Any]
-      updaterField.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
+      updaterField.updateWithValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
       map.toMap must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
     }
 
-    it("should use each inner field's setter when no value is provided") {
+    it("should use each inner field's updater for a mutable Map when no value is provided") {
       val map = mutable.Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1)
-      updaterField.setValue(map, None)
+      updaterField.updateWithValue(map, None)
       map.toMap must be (Map.empty[String,Any])
     }
 

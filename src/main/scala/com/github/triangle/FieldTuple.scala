@@ -14,21 +14,18 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   def emptyValuesTuple: ValuesTuple
 
   /** Gets a Tuple with the results of calling each getterFromItem with {{{items}}} as the parameter. */
-  def valuesTupleFromItem(items: GetterInput): ValuesTuple
+  def valuesTuple(items: GetterInput): ValuesTuple
 
-  /** Sets the values into {{{subject}}}. */
-  def setValues[T](subject: AnyRef, values: ValuesTuple)
-
-  /** Transforms {{{subject}}} with the values. */
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S
+  /** Updates {{{subject}}} with the values. */
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S
 
   //this is only here to help the IDE to infer the type concretely
   override def productIterator: Iterator[PortableField[_]] = super.productIterator.asInstanceOf[Iterator[PortableField[_]]]
 
   trait TupleField[T] extends PortableField[T] { selfField =>
-    /** Allows chaining such as {{{FieldTuple(...).getter(...).withTransformer(...)}}}. */
-    def withTransformer(splitter: T => ValuesTuple): PortableField[T] = {
-      val updaterField = FieldTuple.this.updater(splitter)
+    /** Allows chaining such as {{{FieldTuple(...).asGetter(...).withUpdater(...)}}}. */
+    def withUpdater(splitter: T => ValuesTuple): PortableField[T] = {
+      val updaterField = FieldTuple.this.asUpdater(splitter)
       new Field[T](selfField + updaterField) {
         override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
           val lifted = f.lift
@@ -44,21 +41,21 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
     }
   }
 
-  /** Creates a Getter PortableField that accepts a composite type T and a combiner function. */
-  def getter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
+  /** Converts the FieldTuple to a Getter PortableField that accepts a composite type T and a combiner function. */
+  def asGetter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
     new Getter[T] with TupleField[T] {
       def getter = {
-        case ref if productIterator.forall(_.getter.isDefinedAt(ref)) => combiner(valuesTupleFromItem(ref))
+        case input if productIterator.forall(_.getter.isDefinedAt(input)) => combiner(valuesTuple(input))
       }
     }
   }
 
   /** Creates a PortableField with an Updater that accepts a composite type T and a splitter function. */
-  def updater[T](splitter: T => ValuesTuple): NoGetter[T] = {
-    new NoGetter[T] with TupleField[T] {
+  def asUpdater[T](splitter: T => ValuesTuple): TupleField[T] = {
+    new Updater[T] with TupleField[T] {
       def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
         case input @ UpdaterInput(subject, valueOpt, _) if productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue)) =>
-          transformWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
+          updateWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
       }
     }
   }
@@ -106,32 +103,29 @@ trait TypedProduct[T <: Any] extends Product {
 case class FieldTuple2[F1,F2](_1: PortableField[F1], _2: PortableField[F2])
         extends FieldTuple with Product2[PortableField[F1],PortableField[F2]] {
   type ValuesTuple = (Option[F1], Option[F2])
+
   def emptyValuesTuple = (None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    _2.transformWithValue(result1, values._2)
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items))
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    _2.updateWithValue(result1, values._2)
   }
 }
 
 case class FieldTuple3[F1,F2,F3](_1: PortableField[F1], _2: PortableField[F2], _3: PortableField[F3])
         extends FieldTuple with Product3[PortableField[F1],PortableField[F2],PortableField[F3]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3])
+
   def emptyValuesTuple = (None, None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-    _3.setter(subject)(values._3)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    val result2 = _2.transformWithValue(result1, values._2)
-    _3.transformWithValue(result2, values._3)
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items))
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    val result2 = _2.updateWithValue(result1, values._2)
+    _3.updateWithValue(result2, values._3)
   }
 }
 
@@ -139,20 +133,17 @@ case class FieldTuple4[F1,F2,F3,F4](_1: PortableField[F1], _2: PortableField[F2]
                                     _4: PortableField[F4])
         extends FieldTuple with Product4[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4])
+
   def emptyValuesTuple = (None, None, None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
           _4.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-    _3.setter(subject)(values._3)
-    _4.setter(subject)(values._4)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    val result2 = _2.transformWithValue(result1, values._2)
-    val result3 = _3.transformWithValue(result2, values._3)
-    _4.transformWithValue(result3, values._4)
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    val result2 = _2.updateWithValue(result1, values._2)
+    val result3 = _3.updateWithValue(result2, values._3)
+    _4.updateWithValue(result3, values._4)
   }
 }
 
@@ -160,22 +151,18 @@ case class FieldTuple5[F1,F2,F3,F4,F5](_1: PortableField[F1], _2: PortableField[
                                        _4: PortableField[F4], _5: PortableField[F5])
         extends FieldTuple with Product5[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5])
+
   def emptyValuesTuple = (None, None, None, None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
           _4.getter(items), _5.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-    _3.setter(subject)(values._3)
-    _4.setter(subject)(values._4)
-    _5.setter(subject)(values._5)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    val result2 = _2.transformWithValue(result1, values._2)
-    val result3 = _3.transformWithValue(result2, values._3)
-    val result4 = _4.transformWithValue(result3, values._4)
-    _5.transformWithValue(result4, values._5)
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    val result2 = _2.updateWithValue(result1, values._2)
+    val result3 = _3.updateWithValue(result2, values._3)
+    val result4 = _4.updateWithValue(result3, values._4)
+    _5.updateWithValue(result4, values._5)
   }
 }
 
@@ -183,24 +170,19 @@ case class FieldTuple6[F1,F2,F3,F4,F5,F6](_1: PortableField[F1], _2: PortableFie
                                           _4: PortableField[F4], _5: PortableField[F5], _6: PortableField[F6])
         extends FieldTuple with Product6[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5],PortableField[F6]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5], Option[F6])
+
   def emptyValuesTuple = (None, None, None, None, None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
           _4.getter(items), _5.getter(items), _6.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-    _3.setter(subject)(values._3)
-    _4.setter(subject)(values._4)
-    _5.setter(subject)(values._5)
-    _6.setter(subject)(values._6)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    val result2 = _2.transformWithValue(result1, values._2)
-    val result3 = _3.transformWithValue(result2, values._3)
-    val result4 = _4.transformWithValue(result3, values._4)
-    val result5 = _5.transformWithValue(result4, values._5)
-    _6.transformWithValue(result5, values._6)
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    val result2 = _2.updateWithValue(result1, values._2)
+    val result3 = _3.updateWithValue(result2, values._3)
+    val result4 = _4.updateWithValue(result3, values._4)
+    val result5 = _5.updateWithValue(result4, values._5)
+    _6.updateWithValue(result5, values._6)
   }
 }
 
@@ -209,25 +191,19 @@ case class FieldTuple7[F1,F2,F3,F4,F5,F6,F7](_1: PortableField[F1], _2: Portable
                                              _7: PortableField[F7])
         extends FieldTuple with Product7[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5],PortableField[F6],PortableField[F7]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5], Option[F6], Option[F7])
+
   def emptyValuesTuple = (None, None, None, None, None, None, None)
-  def valuesTupleFromItem(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
+
+  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
           _4.getter(items), _5.getter(items), _6.getter(items), _7.getter(items))
-  def setValues[T](subject: AnyRef, values: ValuesTuple) {
-    _1.setter(subject)(values._1)
-    _2.setter(subject)(values._2)
-    _3.setter(subject)(values._3)
-    _4.setter(subject)(values._4)
-    _5.setter(subject)(values._5)
-    _6.setter(subject)(values._6)
-    _7.setter(subject)(values._7)
-  }
-  def transformWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
-    val result1 = _1.transformWithValue(subject, values._1)
-    val result2 = _2.transformWithValue(result1, values._2)
-    val result3 = _3.transformWithValue(result2, values._3)
-    val result4 = _4.transformWithValue(result3, values._4)
-    val result5 = _5.transformWithValue(result4, values._5)
-    val result6 = _6.transformWithValue(result5, values._6)
-    _7.transformWithValue(result6, values._7)
+
+  def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
+    val result1 = _1.updateWithValue(subject, values._1)
+    val result2 = _2.updateWithValue(result1, values._2)
+    val result3 = _3.updateWithValue(result2, values._3)
+    val result4 = _4.updateWithValue(result3, values._4)
+    val result5 = _5.updateWithValue(result4, values._5)
+    val result6 = _6.updateWithValue(result5, values._6)
+    _7.updateWithValue(result6, values._7)
   }
 }
