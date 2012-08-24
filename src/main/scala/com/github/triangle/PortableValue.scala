@@ -9,14 +9,6 @@ trait PortableValue {
     */
   def copyTo(to: AnyRef, contextItems: GetterInput = GetterInput.empty)
 
-  /** Transforms the {{{initial}}} subject using this value.
-    * @param contextItems a List of items that may be used by PortableField.transformerUsingItems.
-    * @return the transformed subject, which could be the initial instance
-    */
-  @deprecated("use update(initial, contextItems)")
-  def transform[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S =
-    update(initial, contextItems)
-
   /**
    * Updates the {{{initial}}} subject using this value.
    * @param context items that may be used by PortableField.transformerUsingItems.
@@ -31,35 +23,45 @@ trait PortableValue {
 class PortableValue1[T](field: PortableField[T], value: Option[T]) extends Tuple2(field, value) with PortableValue with Logging {
   protected def logTag = "triangle"
 
+  @deprecated("use copyTo(to, GetterInput(contextItems))")
   def copyTo(to: AnyRef, contextItems: List[AnyRef]) {
     copyTo(to, GetterInput(contextItems))
   }
 
   def copyTo(to: AnyRef, getterInput: GetterInput = GetterInput.empty) {
-    if (field.updater.isDefinedAt(UpdaterInput(to, getterInput))) {
-      copyToDefinedAt(to, getterInput)
-    } else {
-      debug("Unable to copy" + PortableField.from_to_for_field_message(value, to, field)  + " due to updater.")
-    }
+    copyTo(UpdaterInput(to, getterInput))
   }
 
-  private def copyToDefinedAt(to: AnyRef, getterInput: GetterInput) {
-    trace("Copying " + value + PortableField.from_to_for_field_message(value, to, field))
-    field.updater(UpdaterInput(to, value, getterInput))
+  /**
+   * Copy this value into {{{updaterInput.subject}}}.  This is identical to update(updaterInput) but may be more readable.
+   * @param updaterInput an UpdaterInput that doesn't have a value.
+   *                     This is because the value is not needed since it's already in the PortableValue.
+   */
+  def copyTo[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]) {
+    update(updaterInput)
   }
 
+  /** Update the {{{initial}}} with this value. */
   def update[S <: AnyRef](initial: S, getterInput: GetterInput = GetterInput.empty): S = {
-    if (field.updater.isDefinedAt(UpdaterInput(initial, getterInput))) {
+    update(UpdaterInput(initial, getterInput))
+  }
+
+  /**
+   * Update the {{{updaterInput.subject}}} with this value.  This is identical to copyTo(updaterInput) but may be more readable.
+   * @param updaterInput an UpdaterInput that doesn't have a value.
+   *                     This is because the value is not needed since it's already in the PortableValue.
+   */
+  def update[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]): S = {
+    val initial = updaterInput.subject
+    val updaterInputWithValue = updaterInput.withValue(value)
+    if (field.updater.isDefinedAt(updaterInputWithValue)) {
       trace("About to " + PortableField.update_with_forField_message(initial, "value " + value, field))
-      field.updater(UpdaterInput(initial, value, getterInput))
+      field.updater(updaterInputWithValue)
     } else {
       debug("Unable to " + PortableField.update_with_forField_message(initial, "value " + value, field) + " due to updater")
       initial
     }
   }
-
-  def transform[S <: AnyRef](initial: S, contextItems: List[AnyRef]): S =
-    transform(initial, GetterInput(contextItems))
 
   def get[T2](desiredField: PortableField[T2]): Option[T2] = if (field == desiredField) value.asInstanceOf[Option[T2]] else None
 
@@ -76,7 +78,7 @@ class PortableValueSeq(portableValues: Traversable[PortableValue]) extends Porta
 
   def update[S <: AnyRef](initial: S, contextItems: GetterInput = GetterInput.empty): S = {
     debug("Transforming " + initial + " using PortableValue with " + portableValues)
-    portableValues.foldLeft(initial)((subject, portableValue) => portableValue.transform(subject, contextItems))
+    portableValues.foldLeft(initial)((subject, portableValue) => portableValue.update(subject, contextItems))
   }
 
   def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption

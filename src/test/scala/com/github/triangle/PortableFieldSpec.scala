@@ -162,7 +162,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         stringField.getter(GetterInput(myEntity1, otherEntity1)) must be (Some("other1"))
         stringField.getter(GetterInput(otherEntity1, myEntity1)) must be (Some("other1"))
         val mutableMap = mutable.Map.empty[String, Any]
-        stringField.copyFromItem(GetterInput(myEntity1, otherEntity1), mutableMap)
+        stringField.copy(GetterInput(myEntity1, otherEntity1), mutableMap)
         mutableMap("stringValue") must be ("other1")
       }
     }

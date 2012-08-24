@@ -194,26 +194,26 @@ trait PortableField[T] extends BaseField with Logging { self =>
   //inherited
   def copyAndTransformWithItem[S <: AnyRef](input: GetterInput, initial: S): S = {
     if (updater.isDefinedAt(UpdaterInput(initial, input))) {
-      copyFromItem(input).transform(initial, input)
+      copyFrom(input).update(initial, input)
     } else {
       debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of transformer.")
       initial
     }
   }
 
-  def copyFrom(from: AnyRef): PortableValue1[T] = copyFromItem(GetterInput.single(from))
+  def copyFrom(from: AnyRef): PortableValue1[T] = copyFrom(GetterInput.single(from))
 
-  def copyFromItem(input: GetterInput): PortableValue1[T] =
+  def copyFrom(input: GetterInput): PortableValue1[T] =
     this -> (if (getter.isDefinedAt(input)) getter(input) else None)
 
   override def copy(from: AnyRef, to: AnyRef) {
-    copyFromItem(GetterInput.single(from), to)
+    copy(GetterInput.single(from), to)
   }
 
   //inherited
-  override def copyFromItem(input: GetterInput, to: AnyRef) {
+  override def copy(input: GetterInput, to: AnyRef) {
     if (updater.isDefinedAt(UpdaterInput(to, input))) {
-      copyFromItem(input).copyTo(to, input)
+      copyFrom(input).copyTo(to, input)
     } else {
       debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")
     }

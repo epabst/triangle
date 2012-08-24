@@ -15,7 +15,7 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
 
   def copyFrom(from: AnyRef) = copyFromUsingCopyMethod[AnyRef](f => f.copyFrom(_), from)
 
-  def copyFromItem(fromItems: GetterInput) = copyFromUsingCopyMethod[GetterInput](f => f.copyFromItem(_), fromItems)
+  def copyFrom(fromItems: GetterInput) = copyFromUsingCopyMethod[GetterInput](f => f.copyFrom(_), fromItems)
 
   private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue =
     new PortableValueSeq(fields.map(f => baseFieldCopyMethod(f)(from)))

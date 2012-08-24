@@ -118,7 +118,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
     it("must not fail if the transformer isDefinedAt is false when using a PortableValue") {
       val portableValue = baseFieldWithSetterUsingContext.copyFrom(Set(1,0,3))
       val subject = new Object
-      portableValue.transform(subject) must be (subject)
+      portableValue.update(subject) must be (subject)
     }
   }
 
@@ -132,7 +132,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   describe("copyFrom then transform with contextItems") {
     it("must have the new value and the original items available for the transformer to use") {
       val portableValue = baseFieldWithSetterUsingContext.copyFrom(UseDefaults)
-      val integer = portableValue.transform(new AtomicInteger(30), GetterInput.single(Set(1,0,3)))
+      val integer = portableValue.update(new AtomicInteger(30), GetterInput.single(Set(1,0,3)))
       integer.get() must be (104)
     }
   }

@@ -19,22 +19,22 @@ trait BaseField {
     * @return a PortableValue that copies the value into its parameter
     */
   @deprecated("use GetterInput instead of List")
-  def copyFromItem(fromItems: List[AnyRef]): PortableValue = copyFromItem(GetterInput(fromItems))
+  def copyFromItem(fromItems: List[AnyRef]): PortableValue = copyFrom(GetterInput(fromItems))
 
   /** Copies this field from the first applicable item in {{{fromItems}}}.
     * @return a PortableValue that copies the value into its parameter
     */
-  def copyFromItem(fromItems: GetterInput): PortableValue
+  def copyFrom(fromItems: GetterInput): PortableValue
 
   /** Copies this field from {{{from}}} to {{{to}}}, if possible. */
-  def copy(from: AnyRef, to: AnyRef) { copyFrom(from).copyTo(to, GetterInput.single(from)) }
+  def copy(from: AnyRef, to: AnyRef) { copy(GetterInput.single(from), to) }
 
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
   @deprecated("use GetterInput instead of List")
-  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copyFromItem(GetterInput(fromItems), to) }
+  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copy(GetterInput(fromItems), to) }
 
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
-  def copyFromItem(fromItems: GetterInput, to: AnyRef) { copyFromItem(fromItems).copyTo(to, fromItems) }
+  def copy(fromItems: GetterInput, to: AnyRef) { copyFrom(fromItems).copyTo(to, fromItems) }
 
   /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
     * @return the transformed subject, which could be the initial instance
