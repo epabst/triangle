@@ -32,12 +32,22 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def getter: PartialFunction[GetterInput,Option[T]]
 
-  //todo rename to apply
+  /**
+   * Get an optional value from the given AnyRef.
+   * @throws MatchError if this field is undefined for the given AnyRef
+   */
   def getValue(readable: AnyRef): Option[T] = {
     val result = getter(GetterInput.single(readable))
     require(result != null, this + "'s getter is non-functional.  It should never return a null.")
     result
   }
+
+  /**
+   * Get an optional value from the given AnyRef.
+   * This is here for convenience as an alias for {{{getValue}}}, although that may be more readable.
+   * @throws MatchError if this field is undefined for the given AnyRef
+   */
+  def apply(readable: AnyRef): Option[T] = getValue(readable)
 
   /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
     * @see [[com.github.triangle.PortableField.getter]]
@@ -47,9 +57,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def getRequired(subject: AnyRef): T = getValue(subject).get
 
-  /** An extractor from a GetterInput that matches the value as an Option.
-    * Example: {{{case MyField(Some(string)) => ...}}}
-    */
+  /*
+   * An extractor from a GetterInput that matches the value as an Option.
+   * Example: {{{
+   * case MyField(Some(string)) => ...
+   * case MyField(None) => ...
+   * }}}
+   */
   def unapply(subject: GetterInput): Option[Option[T]] = subject match {
     case items: GetterInput if getter.isDefinedAt(items) => Some(getter(items))
     case _ => None
@@ -169,6 +183,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   //inherited
+  @deprecated("use copyAndTransform")
   def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
 
   //inherited
@@ -235,6 +250,12 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 }
 
+/**
+ * A VERY useful extractor that joins two other extractors and requires that both succeed. *
+ * Usage: {{{
+ *   case MyField1(value1Opt) && MyField2(value2Opt) => ...
+ * }}}
+ */
 case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
