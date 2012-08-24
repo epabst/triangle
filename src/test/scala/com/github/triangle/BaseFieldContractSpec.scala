@@ -105,17 +105,17 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   }
 
   describe("copyAndTransform") {
-    it("temporary: must have the new value and the original 'from' available for the transformer to use") {
+    it("temporary: must have the new value and the original 'from' available for the updater to use") {
       val integer = fieldWithSetterUsingContext.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
-    it("must have the new value and the original 'from' available for the transformer to use") {
+    it("must have the new value and the original 'from' available for the updater to use") {
       val integer = baseFieldWithSetterUsingContext.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
-    it("must not fail if the transformer isDefinedAt is false when using a PortableValue") {
+    it("must not fail if the updater isDefinedAt is false when using a PortableValue") {
       val portableValue = baseFieldWithSetterUsingContext.copyFrom(Set(1,0,3))
       val subject = new Object
       portableValue.update(subject) must be (subject)
@@ -123,14 +123,14 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   }
 
   describe("copyAndTransformWithItem") {
-    it("must have the new value and the original items available for the transformer to use") {
+    it("must have the new value and the original items available for the updater to use") {
       val integer = baseFieldWithSetterUsingContext.copyAndTransformWithItem(GetterInput(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
       integer.get() must be (104)
     }
   }
 
   describe("copyFrom then transform with contextItems") {
-    it("must have the new value and the original items available for the transformer to use") {
+    it("must have the new value and the original items available for the updater to use") {
       val portableValue = baseFieldWithSetterUsingContext.copyFrom(UseDefaults)
       val integer = portableValue.update(new AtomicInteger(30), GetterInput.single(Set(1,0,3)))
       integer.get() must be (104)

@@ -20,14 +20,16 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
   private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue =
     new PortableValueSeq(fields.map(f => baseFieldCopyMethod(f)(from)))
 
-  /** Narrows the FieldList to fields whose transformer isDefinedAt the given subject. */
+  /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
   def copyableTo(subject: AnyRef): FieldList = copyableTo(subject, GetterInput.empty)
 
-  /** Narrows the FieldList to fields whose transformer isDefinedAt the given subject. */
-  def copyableTo(subject: AnyRef, contextItems: GetterInput): FieldList = deepCollect {
-    // It is unnecessary to check the setter as well since transformer should delegate the setter.
-    // This also avoids invoking isDefinedAt additional, unnecessary times.
-    case (field: PortableField[_]) if field.transformerUsingItems.isDefinedAt((subject, contextItems)) => field
+  /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
+  def copyableTo(subject: AnyRef, contextItems: GetterInput): FieldList =
+    copyableTo(UpdaterInput(subject, contextItems))
+
+  /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
+  def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = deepCollect {
+    case (field: PortableField[_]) if field.updater.isDefinedAt(updaterInput) => field
   }
 
   def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)

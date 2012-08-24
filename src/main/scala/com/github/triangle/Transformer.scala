@@ -26,7 +26,7 @@ object Transformer {
 
       def subjectManifest = _subjectManifest
 
-      override def toString = "transformer[" + subjectManifest.erasure.getSimpleName + "]"
+      override def toString = "Transformer[" + subjectManifest.erasure.getSimpleName + "]"
     }
 
   /** [[com.github.triangle.PortableField]] support for transforming a subject using a value if {{{subject}}} is of type S.
@@ -62,7 +62,7 @@ object TransformerUsingItems {
     }
   }
 
-  /** Defines transformer field defined for a given type S with T as the value type. */
+  /** Defines Transformer field defined for a given type S with T as the value type. */
   def apply[S <: AnyRef,T](body: (S, GetterInput) => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): SubjectTransformer[S,T] = {
     new SubjectTransformer[S,T] {
       override def transformerUsingItems[S1]: PartialFunction[(S1,GetterInput),Option[T] => S1] = {

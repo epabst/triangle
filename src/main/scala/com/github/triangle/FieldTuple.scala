@@ -28,8 +28,8 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   trait TupleField[T] extends PortableField[T] { selfField =>
     /** Allows chaining such as {{{FieldTuple(...).getter(...).withTransformer(...)}}}. */
     def withTransformer(splitter: T => ValuesTuple): PortableField[T] = {
-      val theTransformer = FieldTuple.this.transformer(splitter)
-      new Field[T](selfField + theTransformer) {
+      val updaterField = FieldTuple.this.updater(splitter)
+      new Field[T](selfField + updaterField) {
         override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
           val lifted = f.lift
           //don't traverse theTransformer since it duplicates the fields within selfField
@@ -53,12 +53,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
     }
   }
 
-  /** Creates a Transformer and Setter PortableField that accepts a composite type T and a splitter function. */
-  @deprecated("use updater(splitter)")
-  def transformer[T](splitter: T => ValuesTuple): NoGetter[T] = {
-    updater(splitter)
-  }
-
+  /** Creates a PortableField with an Updater that accepts a composite type T and a splitter function. */
   def updater[T](splitter: T => ValuesTuple): NoGetter[T] = {
     new NoGetter[T] with TupleField[T] {
       def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
@@ -74,7 +69,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
   }
 }
 
-/** The implicit toTupleXOfSomes defs are useful when defining a transformer for a FieldTuple. */
+/** The implicit toTupleXOfSomes defs are useful when defining a updater for a FieldTuple. */
 object FieldTuple {
   def apply[F1,F2](_1: PortableField[F1], _2: PortableField[F2]) =
     FieldTuple2(_1, _2)

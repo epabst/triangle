@@ -47,7 +47,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
     holder.ref.get("count") must be (Some(10))
   }
 
-  it("must unwrap the AnyRef for transformer (using setter)") {
+  it("must unwrap the AnyRef for updater (using setter)") {
     val field = new PartialDelegatingField[Int] {
       protected def delegate = PortableField.mapField[Int]("count")
 
@@ -56,7 +56,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
       }
     }
     val holder = AnyRefHolder(mutable.Map.empty[String,Any])
-    field.transformer.apply(holder)(Some(10))
+    field.updateWithValue(holder, Some(10))
     holder.ref.get("count") must be (Some(10))
   }
 

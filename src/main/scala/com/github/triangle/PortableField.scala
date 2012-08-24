@@ -151,19 +151,6 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  /** PartialFunction for transforming an AnyRef using an optional value.
-    * This delegates to {{{setter}}} for mutable objects.
-    * {{{transformer(foo)(value)}}} should return a transformed version of foo (which could be the same instance if mutable).
-    * Note: Implementations usually must specify the return type to compile properly
-    * The parameter is the subject to be transformed, whether immutable or mutable
-    */
-  @deprecated("use subject => v => updater(UpdaterInput(subject, v))")
-  //todo delete
-  final def transformer[S <: AnyRef]: PartialFunction[S,Option[T] => S] = {
-    case subject if updater.isDefinedAt(UpdaterInput(subject, GetterInput.empty)) =>
-      valueOpt => updater(UpdaterInput(subject, GetterInput.empty))
-  }
-
   /*
    * PartialFunction for updating an AnyRef using an optional value and context.
    * {{{updater(UpdaterInput(foo, value, GetterInput(...))}}} should return an updated version of foo
@@ -174,9 +161,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
-  /** A transformer that also has access to some items such as context that may be helpful when transforming. */
+  /** A updater that also has access to some items such as context that may be helpful when transforming. */
   @deprecated("use (subject, context) => v => updater(UpdaterInput(subject, v, context))")
-  // todo move into subclasses that define transformer
+  // todo move into subclasses that define updater
   def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
     case (subject, context) if updater.isDefinedAt(UpdaterInput(subject, context)) =>
       valueOpt => updater[S](UpdaterInput(subject, valueOpt, context))
@@ -196,7 +183,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     if (updater.isDefinedAt(UpdaterInput(initial, input))) {
       copyFrom(input).update(initial, input)
     } else {
-      debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of transformer.")
+      debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of updater.")
       initial
     }
   }

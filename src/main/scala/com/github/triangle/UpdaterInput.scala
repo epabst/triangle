@@ -1,7 +1,7 @@
 package com.github.triangle
 
 /**
- * The input to a [[com.github.triangle.PortableField]] transformer.
+ * The input to a [[com.github.triangle.PortableField]] updater.
  * Usage in updater: case UpdaterInput(subject, valueOpt, ...see usage of GetterInput...) =>
  * @param subject the primary subject that will be transformed
  * @param valueOpt the value to put into the subject

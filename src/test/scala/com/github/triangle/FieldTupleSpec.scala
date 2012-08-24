@@ -165,33 +165,33 @@ class FieldTupleSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("transformer") {
-    val transformer = FieldTuple(intField, stringField, doubleField).transformer[IntStringDouble](v => (v.int, v.string, v.double))
+  describe("updater") {
+    val updaterField = FieldTuple(intField, stringField, doubleField).updater[IntStringDouble](v => (v.int, v.string, v.double))
 
-    it("should use each inner field's transformer") {
-      val map = transformer.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
+    it("should use each inner field's updater") {
+      val map = updaterField.transformWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))
       map must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
     }
 
-    it("should use each inner field's transformer when no value is provided") {
-      val map = transformer.transformWithValue(Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1), None)
+    it("should use each inner field's updater when no value is provided") {
+      val map = updaterField.transformWithValue(Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1), None)
       map.toMap must be (Map.empty[String,Any])
     }
 
     it("should use each inner field's setter") {
       val map = mutable.Map.empty[String,Any]
-      transformer.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
+      updaterField.setValue(map, Some(IntStringDouble(5, "Joe", 0.1)))
       map.toMap must be (Map("int" -> 5, "string" -> "Joe", "double" -> 0.1))
     }
 
     it("should use each inner field's setter when no value is provided") {
       val map = mutable.Map[String,Any]("int" -> 5, "string" -> "Joe", "double" -> 0.1)
-      transformer.setValue(map, None)
+      updaterField.setValue(map, None)
       map.toMap must be (Map.empty[String,Any])
     }
 
     it("should support deepCollect") {
-      transformer.deepCollect {
+      updaterField.deepCollect {
         case f if f == intField => f
         case f if f == doubleField => f
       } must be (List(intField, doubleField))
