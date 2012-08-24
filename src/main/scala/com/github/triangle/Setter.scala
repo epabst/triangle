@@ -77,7 +77,9 @@ object Setter {
   }
 }
 
+@deprecated("use Updater")
 object SetterUsingItems {
+  @deprecated("use Updater")
   def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]): Setter[T] = new Setter[T] {
     def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
       case UpdaterInput(subject, valueOpt, context) if body.isDefinedAt((subject, context)) =>
@@ -86,6 +88,7 @@ object SetterUsingItems {
   }
 
   /** Defines setter field for a mutable type with Option as the value type. */
+  @deprecated("use Updater")
   def apply[S <: AnyRef,T](body: (S, GetterInput) => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
     new FieldSetter[S,T] with NoGetter[T] {
       def subjectManifest = _subjectManifest

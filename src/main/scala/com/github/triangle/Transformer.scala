@@ -1,11 +1,14 @@
 package com.github.triangle
 
+@deprecated("use NoUpdater")
 private[triangle] trait NoTransformer[T] extends PortableField[T] {
   def updater[S <: AnyRef] = PortableField.emptyPartialFunction
 }
 
+@deprecated("use Updater")
 trait Transformer[T] extends NoGetter[T]
 
+@deprecated("use Updater or SubjectUpdater")
 object Transformer {
   def apply[T](body: PartialFunction[AnyRef,Option[T] => AnyRef]): Transformer[T] = new Transformer[T] {
     def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
@@ -44,6 +47,7 @@ object Transformer {
     })
 }
 
+@deprecated("use Updater")
 trait TransformerUsingItems[T] extends Transformer[T] {
   override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S]
 
@@ -53,8 +57,10 @@ trait TransformerUsingItems[T] extends Transformer[T] {
   }
 }
 
+@deprecated("use SubjectUpdater")
 trait SubjectTransformer[S <: AnyRef,T] extends TransformerUsingItems[T] with FieldWithSubject[S,T]
 
+@deprecated("use Updater or SubjectUpdater")
 object TransformerUsingItems {
   def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => AnyRef]): Transformer[T] = new TransformerUsingItems[T] {
     override def transformerUsingItems[S <: AnyRef]: PartialFunction[(S,GetterInput),Option[T] => S] = {
