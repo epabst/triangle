@@ -8,7 +8,7 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
 
   def unconvert(value: T): Option[F]
 
-  def getterFromItem = field.getterFromItem.andThen(value => value.flatMap(convert(_)))
+  def getter = field.getter.andThen(value => value.flatMap(convert(_)))
 
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
     case input @ UpdaterInput(subject, valueOpt, context) if field.updater.isDefinedAt(input.withUndeterminedValue) =>

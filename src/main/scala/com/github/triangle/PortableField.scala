@@ -30,17 +30,17 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * If none of them has Some value, then it will return None if at least one of them applies.
     * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
     */
-  def getterFromItem: PartialFunction[GetterInput,Option[T]]
+  def getter: PartialFunction[GetterInput,Option[T]]
 
   //todo rename to apply
   def getValue(readable: AnyRef): Option[T] = {
-    val result = getterFromItem(GetterInput.single(readable))
+    val result = getter(GetterInput.single(readable))
     require(result != null, this + "'s getter is non-functional.  It should never return a null.")
     result
   }
 
   /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
-    * @see [[com.github.triangle.PortableField.getterFromItem]]
+    * @see [[com.github.triangle.PortableField.getter]]
     * @return the value
     * @throws NoSuchElementException if the value was None
     * @throws MatchError if subject is not an applicable type
@@ -51,7 +51,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
     * Example: {{{case MyField(Some(string)) => ...}}}
     */
   def unapply(subject: GetterInput): Option[Option[T]] = subject match {
-    case items: GetterInput if getterFromItem.isDefinedAt(items) => Some(getterFromItem(items))
+    case items: GetterInput if getter.isDefinedAt(items) => Some(getter(items))
     case _ => None
   }
 
@@ -189,7 +189,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def copyFrom(from: AnyRef): PortableValue1[T] = copyFromItem(GetterInput.single(from))
 
   def copyFromItem(input: GetterInput): PortableValue1[T] =
-    this -> (if (getterFromItem.isDefinedAt(input)) getterFromItem(input) else None)
+    this -> (if (getter.isDefinedAt(input)) getter(input) else None)
 
   override def copy(from: AnyRef, to: AnyRef) {
     copyFromItem(GetterInput.single(from), to)
@@ -209,9 +209,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
     new PortableField[T] {
       override def toString = self + " + " + other
 
-      override def getterFromItem = {
-        case items if self.getterFromItem.isDefinedAt(items) || other.getterFromItem.isDefinedAt(items) => {
-          val values = List(self, other).view.map(_.getterFromItem).filter(_.isDefinedAt(items)).map(_(items))
+      override def getter = {
+        case items if self.getter.isDefinedAt(items) || other.getter.isDefinedAt(items) => {
+          val values = List(self, other).view.map(_.getter).filter(_.isDefinedAt(items)).map(_(items))
           values.find(_.isDefined).getOrElse(None)
         }
       }
@@ -268,7 +268,7 @@ object PortableField {
 
   /** Defines a default for a field value, used when copied from UseDefaults. */
   def default[T](value: => T): PortableField[T] = new SingleGetter[T] {
-    def getter = { case _: UseDefaults => Some(value) }
+    def singleGetter = { case _: UseDefaults => Some(value) }
 
     override def toString = "default(" + value + ")"
   }

@@ -14,7 +14,7 @@ import Converter._
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
   object LengthField extends SingleGetter[Int] {
-    def getter = { case s: String => s.length }
+    def singleGetter = { case s: String => s.length }
   }
 
   //required by contract spec
@@ -55,8 +55,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("default") {
       it("must only work on PortableField.UseDefaults") {
         val stringField = default("Hello")
-        stringField.getterFromItem.isDefinedAt(GetterInput.single(List("bogus list"))) must be (false)
-        stringField.getterFromItem(GetterInput.single(PortableField.UseDefaults)) must be (Some("Hello"))
+        stringField.getter.isDefinedAt(GetterInput.single(List("bogus list"))) must be (false)
+        stringField.getter(GetterInput.single(PortableField.UseDefaults)) must be (Some("Hello"))
       }
     }
 
@@ -157,10 +157,10 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         val stringField = mapField[String]("stringValue") +
           Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
           Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
-        stringField.getterFromItem.isDefinedAt(GetterInput(myEntity1, otherEntity1)) must be (true)
-        stringField.getterFromItem.isDefinedAt(GetterInput.single(new Object)) must be (false)
-        stringField.getterFromItem(GetterInput(myEntity1, otherEntity1)) must be (Some("other1"))
-        stringField.getterFromItem(GetterInput(otherEntity1, myEntity1)) must be (Some("other1"))
+        stringField.getter.isDefinedAt(GetterInput(myEntity1, otherEntity1)) must be (true)
+        stringField.getter.isDefinedAt(GetterInput.single(new Object)) must be (false)
+        stringField.getter(GetterInput(myEntity1, otherEntity1)) must be (Some("other1"))
+        stringField.getter(GetterInput(otherEntity1, myEntity1)) must be (Some("other1"))
         val mutableMap = mutable.Map.empty[String, Any]
         stringField.copyFromItem(GetterInput(myEntity1, otherEntity1), mutableMap)
         mutableMap("stringValue") must be ("other1")
@@ -170,14 +170,14 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("getterFromItem instance method") {
       it("must get from the first applicable item with Some value") {
         val fieldWithDefault = default(12) + mapField[Int]("count")
-        fieldWithDefault.getterFromItem(GetterInput(Map.empty[String,Any], PortableField.UseDefaults)) must be (Some(12))
-        fieldWithDefault.getterFromItem(GetterInput.single(Map.empty[String,Any])) must be (None)
+        fieldWithDefault.getter(GetterInput(Map.empty[String,Any], PortableField.UseDefaults)) must be (Some(12))
+        fieldWithDefault.getter(GetterInput.single(Map.empty[String,Any])) must be (None)
 
         val fieldWithoutDefault = mapField[Int]("count")
-        fieldWithoutDefault.getterFromItem(GetterInput(Map.empty[String,Any], PortableField.UseDefaults)) must be (None)
+        fieldWithoutDefault.getter(GetterInput(Map.empty[String,Any], PortableField.UseDefaults)) must be (None)
 
         val fieldWithDeprecatedName = mapField[Int]("count") + mapField[Int]("size")
-        fieldWithDeprecatedName.getterFromItem(GetterInput.single(Map[String,Any]("size" -> 4))) must be (Some(4))
+        fieldWithDeprecatedName.getter(GetterInput.single(Map[String,Any]("size" -> 4))) must be (Some(4))
       }
     }
 
@@ -190,11 +190,11 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
 
       it("must handle accessing more than one item at once") {
-        field.getterFromItem(GetterInput(1 -> 2, "hello")) must be (Some("hello12"))
+        field.getter(GetterInput(1 -> 2, "hello")) must be (Some("hello12"))
       }
 
       it("must gracefully handle a non-list") {
-        field.getterFromItem.isDefinedAt(GetterInput.single("hello")) must be (false)
+        field.getter.isDefinedAt(GetterInput.single("hello")) must be (false)
       }
     }
 
@@ -210,7 +210,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("formatted") {
       it("must parse and format values") {
         val field = formatted[Double](ValueFormat.currencyValueFormat, mapField[String]("amountString"))
-        field(Map("amountString" -> "12.34")) must be (12.34)
+        field.getValue(Map("amountString" -> "12.34")) must be (Some(12.34))
 
         val map = mutable.Map[String,Any]()
         field.setValue(map, Some(16))
@@ -228,7 +228,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     describe("converted") {
       it("must convert values in both directions") {
         val field: PortableField[Double] = converted(currencyToEditString, mapField[String]("amountString"), stringToCurrency)
-        field(Map("amountString" -> "12.34")) must be (12.34)
+        field.getValue(Map("amountString" -> "12.34")) must be (Some(12.34))
 
         val map = mutable.Map[String,Any]()
         field.setValue(map, Some(16))
@@ -311,19 +311,19 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         val mockField = mock[PortableField[String]]
         val field = mapField[String]("foo") + mockField
         expecting {
-          call(mockField.getterFromItem).andReturn({
+          call(mockField.getter).andReturn({
             case GetterInput(List(PortableField.UseDefaults, "String")) => Some("success")
           }).anyTimes
         }
         whenExecuting(mockField) {
-          field.getterFromItem(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
+          field.getter(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
         }
       }
     }
 
     it("must support easily specifying a getter as a partial function") {
       val field = Getter.single[Int] { case subject: AnyRef => 3 }
-      field("hello") must be (3)
+      field.getValue("hello") must be (Some(3))
     }
 
     it("must support easily specifying a setter as a partial function") {
@@ -358,7 +358,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
   describe("&&") {
     it("must extract both values") {
       object FirstLetter extends SingleGetter[Char] {
-        def getter = { case s: String => s.head }
+        def singleGetter = { case s: String => s.head }
       }
       val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
       length must be (5)

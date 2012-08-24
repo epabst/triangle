@@ -15,7 +15,7 @@ trait FieldWithDelegate[T] extends PortableField[T] {
 trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   protected def delegate: PortableField[T]
 
-  override def getterFromItem = delegate.getterFromItem
+  override def getter = delegate.getter
 
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updater
 }
@@ -32,9 +32,9 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSe
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
 
-  def getterFromItem: PartialFunction[GetterInput,Option[T]] = {
-    case input: GetterInput if delegate.getterFromItem.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
-      delegate.getterFromItem(GetterInput(input.items.collect(subjectGetter)))
+  def getter: PartialFunction[GetterInput,Option[T]] = {
+    case input: GetterInput if delegate.getter.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
+      delegate.getter(GetterInput(input.items.collect(subjectGetter)))
   }
 
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
