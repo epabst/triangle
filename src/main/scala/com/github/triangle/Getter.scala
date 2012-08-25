@@ -26,7 +26,7 @@ trait SingleGetter[T] extends Getter[T] {
    * If none of them has Some value, then it will return None if at least one of them applies.
    * If none of them even apply, the PartialFunction won't match at all (i.e. isDefinedAt will be false).
    */
-  final override def getter = {
+  override def getter = {
     case input: GetterInput if input.items.exists(singleGetter.isDefinedAt(_)) =>
       input.items.view.collect(singleGetter).find(_.isDefined).getOrElse(None)
   }
@@ -34,8 +34,11 @@ trait SingleGetter[T] extends Getter[T] {
 
 object Getter {
 
-  def single[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
+  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] {
+    override def getter = body
+  }
 
+  def single[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
     override def getter = {
       case input: GetterInput if input.items.exists(body.isDefinedAt(_)) =>
         input.items.view.collect(body).find(_.isDefined).getOrElse(None)
@@ -49,13 +52,4 @@ object Getter {
 
       override def toString = "getter[" + subjectManifest.erasure.getSimpleName + "]"
     }
-}
-
-/** Like Getter, but passes the list of items so that more than one of the Subjects can be used
-  * in getting the value.
-  */
-object GetterFromItem {
-  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] {
-    override def getter = body
-  }
 }

@@ -18,20 +18,10 @@ trait BaseField {
   /** Copies this field from the first applicable item in {{{fromItems}}}.
     * @return a PortableValue that copies the value into its parameter
     */
-  @deprecated("use GetterInput instead of List")
-  def copyFromItem(fromItems: List[AnyRef]): PortableValue = copyFrom(GetterInput(fromItems))
-
-  /** Copies this field from the first applicable item in {{{fromItems}}}.
-    * @return a PortableValue that copies the value into its parameter
-    */
   def copyFrom(fromItems: GetterInput): PortableValue
 
   /** Copies this field from {{{from}}} to {{{to}}}, if possible. */
   def copy(from: AnyRef, to: AnyRef) { copy(GetterInput.single(from), to) }
-
-  /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
-  @deprecated("use GetterInput instead of List")
-  def copyFromItem(fromItems: List[AnyRef], to: AnyRef) { copy(GetterInput(fromItems), to) }
 
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
   def copy(fromItems: GetterInput, to: AnyRef) { copyFrom(fromItems).update(to, fromItems) }

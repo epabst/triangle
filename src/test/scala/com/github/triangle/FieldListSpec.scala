@@ -42,8 +42,8 @@ class FieldListSpec extends BaseFieldContractSpec {
       val fields = FieldList(countField, priceField)
       val map = mutable.Map[String, Any]()
 
-      val itemList = List(new Object, PortableField.UseDefaults, Map("count" -> 11, "price" -> 300.0))
-      fields.copyFromItem(itemList, map)
+      val itemList = GetterInput(new Object, PortableField.UseDefaults, Map("count" -> 11, "price" -> 300.0))
+      fields.copy(itemList, map)
       //should use the default since first in the item list
       map.get("count") must be (Some(10))
       map.get("price") must be (Some(300.00))

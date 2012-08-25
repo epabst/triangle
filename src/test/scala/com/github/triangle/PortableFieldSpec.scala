@@ -139,19 +139,18 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
     }
 
-    describe("copyFromItem(from)") {
+    describe("copyFrom(GetterInput)") {
       it("must return a working PortableValue") {
         val stringField = mapField[String]("greeting")
         val intField = mapField[Int]("times")
         val map = Map[String, Any]("greeting" -> "hi", "times" -> 2)
-        val portableValue: PortableValue = FieldList(stringField, intField).copyFromItem(List(new Object, map))
+        val portableValue: PortableValue = FieldList(stringField, intField).copyFrom(GetterInput(new Object, map))
         portableValue.get(stringField) must be (Some("hi"))
         portableValue.get(intField) must be (Some(2))
       }
-
     }
 
-    describe("copyFromItem(from, to)") {
+    describe("copy(GetterInput, to)") {
       it("must use the first applicable field variation with the first applicable item") {
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
@@ -168,7 +167,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
     }
 
-    describe("getterFromItem instance method") {
+    describe("getter") {
       it("must get from the first applicable item with Some value") {
         val fieldWithDefault = default(12) + mapField[Int]("count")
         fieldWithDefault.getter(GetterInput(Map.empty[String,Any], PortableField.UseDefaults)) must be (Some(12))
@@ -182,11 +181,11 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       }
     }
 
-    describe("GetterFromItem") {
+    describe("Getter") {
       object StringIdentityField extends Field(identityField[String])
       object Tuple2IdentityField extends Field(identityField[(Int,Int)])
 
-      val field = GetterFromItem[String] {
+      val field = Getter[String] {
         case StringIdentityField(Some(string)) && Tuple2IdentityField(Some((x,y))) => string+ x + y
       }
 
