@@ -14,11 +14,11 @@ class UpdaterSpec extends Spec with MustMatchers {
   case class MyEntity(name: String = "(none)")
 
   it("must provide a convenient clearer") {
-    SubjectUpdater[String,String]((string: String) => (v: String) => string + v, noUpdaterForEmpty[String])
+    Updater[String,String]((string: String) => (v: String) => string + v, noUpdaterForEmpty[String])
   }
 
   describe("Updater") {
-    val stringField: PortableField[String] = Updater {
+    val stringField: PortableField[String] = Updater[String] {
       case UpdaterInput(e: MyEntity, valueOpt, context) =>
         e.copy(name = valueOpt.getOrElse("(none)") + context.items.mkString("-", "-", ""))
     }

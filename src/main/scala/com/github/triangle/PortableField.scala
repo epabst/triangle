@@ -210,7 +210,7 @@ object PortableField {
 
   def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
     val delegate = Getter[collection.Map[K,_ <: T],T](_.get(key)) +
-      SubjectUpdater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
+      Updater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
       Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
 
     override def toString = "mapField(" + key + ")"
@@ -224,7 +224,7 @@ object PortableField {
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
   def adjustment[S <: AnyRef](adjuster: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =
-    default[Unit](Unit) + SubjectUpdater((s: S) => (u: Option[Unit]) => adjuster(s))
+    default[Unit](Unit) + Updater((s: S) => (u: Option[Unit]) => adjuster(s))
 
   def converted[A,B](converter1: Converter[A,B], field: PortableField[B], converter2: Converter[B,A]): PortableField[A] =
     new ConvertedField[A,B](field) {

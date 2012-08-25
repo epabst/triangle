@@ -266,7 +266,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
       it("must use all updaters of a field") {
         val stringField = mapField[String]("greeting") +
-          SubjectUpdater((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
+          Updater((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
             (map: Map[String,String]) => map)
         //qualified to point out that it's immutable
         val result: Map[String,String] = stringField.updateWithValue(Map.empty[String,String], Some("hello"))
@@ -276,7 +276,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("copyAndUpdate") {
       it("must use an initial and some data") {
-        val stringField = SubjectUpdater[Map[String,String],String](
+        val stringField = Updater[Map[String,String],String](
           (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
           mapField[String]("greeting")
 

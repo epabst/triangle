@@ -13,10 +13,10 @@ trait UpdaterUsingSetter[T] extends PortableField[T] {
 trait Setter[T] extends NoGetter[T] with UpdaterUsingSetter[T]
 
 /** [[com.github.triangle.PortableField]] support for setting a value if {{{subject}}} is of type S.
-  * This is a trait so that it can be mixed with FieldGetter.
+  * This is a trait so that it can be mixed with TargetedGetter.
   * S is the Writable type to put the value into
   */
-trait FieldSetter[S <: AnyRef,T] extends Setter[T] with FieldWithSubject[S,T] with Logging {
+trait TargetedSetter[S <: AnyRef,T] extends Setter[T] with TargetedField[S,T] with Logging {
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
@@ -38,8 +38,8 @@ object Setter {
   }
 
   /** Defines setter field for a mutable type with Option as the value type. */
-  def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
-    new FieldSetter[S,T] {
+  def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): TargetedSetter[S,T] = {
+    new TargetedSetter[S,T] {
       def subjectManifest = _subjectManifest
 
       def set(subject: S, valueOpt: Option[T], context: GetterInput) {
@@ -56,7 +56,7 @@ object Setter {
     * @param clearer a function or 'noSetterForEmpty'
     */
   def apply[S <: AnyRef,T](body: S => T => Unit, clearer: S => Unit)
-                          (implicit subjectManifest: ClassManifest[S]): FieldSetter[S,T] =
+                          (implicit subjectManifest: ClassManifest[S]): TargetedSetter[S,T] =
     apply[S,T](fromDirect(body, clearer))
 
   private def fromDirect[S,T](setter: S => T => Unit, clearer: S => Unit = {_: S => })

@@ -4,7 +4,7 @@ package com.github.triangle
   * T is the value type.
   * S is the the Readable type to get the value out of.
   */
-abstract class FieldGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends FieldWithSubject[S,T] with SingleGetter[T] with Logging {
+abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends TargetedField[S,T] with SingleGetter[T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
@@ -46,9 +46,9 @@ object Getter {
   }
 
   /** Defines a getter field for a type. */
-  def apply[S <: AnyRef,T](getter1: S => Option[T])(implicit subjectManifest: ClassManifest[S]): FieldGetter[S,T] =
-    new FieldGetter[S,T] with Getter[T] {
-      def get(subject: S) = getter1(subject)
+  def apply[S <: AnyRef,T](body: S => Option[T])(implicit subjectManifest: ClassManifest[S]): TargetedGetter[S,T] =
+    new TargetedGetter[S,T] {
+      def get(subject: S) = body(subject)
 
       override def toString = "getter[" + subjectManifest.erasure.getSimpleName + "]"
     }
