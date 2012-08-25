@@ -38,7 +38,7 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSe
   }
 
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-  def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+  def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
     case input @ UpdaterInput(subject, valueOpt, context)
       if subjectGetter.isDefinedAt(subject) && delegate.updater.isDefinedAt(input.copy(subject = subjectGetter(subject))) =>
         delegate.updater(input.copy(subject = subjectGetter(subject)))

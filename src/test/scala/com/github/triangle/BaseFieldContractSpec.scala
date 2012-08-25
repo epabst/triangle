@@ -25,7 +25,7 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
   val fieldWithSetterUsingContext = new UpdaterUsingSetter[Int] with NoGetter[Int] {
 
     /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-    def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,Int],Unit] = {
+    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,Int],Unit] = {
       case UpdaterInput(integer: AtomicInteger, valueOpt, IntSetIdentityField(Some(integers))) =>
         integer.set(valueOpt.getOrElse(0) + integers.sum)
     }

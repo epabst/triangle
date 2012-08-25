@@ -2,12 +2,11 @@ package com.github.triangle
 
 trait UpdaterUsingSetter[T] extends PortableField[T] {
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-  //todo rename to setter
-  def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
+  def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
 
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case input @ UpdaterInput(subject, valueOpt, context) if setterUsingInput.isDefinedAt(input)=>
-      setterUsingInput(input); subject
+    case input @ UpdaterInput(subject, valueOpt, context) if setter.isDefinedAt(input)=>
+      setter(input); subject
   }
 }
 
@@ -21,26 +20,20 @@ trait FieldSetter[S <: AnyRef,T] extends Setter[T] with FieldWithSubject[S,T] wi
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
-  @deprecated("use GetterInput instead of List[AnyRef]")
-  def set(subject: S, value: Option[T], items: List[AnyRef])
+  def set(subject: S, value: Option[T], context: GetterInput)
 
-  def set(subject: S, value: Option[T], context: GetterInput) {
-    set(subject, value, context.items.toList)
-  }
-
-  def setterUsingInput[S1 <: AnyRef]: PartialFunction[UpdaterInput[S1,T],Unit] = {
+  def setter[S1 <: AnyRef]: PartialFunction[UpdaterInput[S1,T],Unit] = {
     case UpdaterInput(subject, valueOpt, context) if subjectManifest.erasure.isInstance(subject) =>
      set(subject.asInstanceOf[S], valueOpt, context)
   }
 }
 
 object Setter {
-  def apply[T](body: PartialFunction[AnyRef,Option[T] => Unit]): Setter[T] = new Setter[T] {
+  def apply[T](body: PartialFunction[UpdaterInput[AnyRef,T],Unit]): Setter[T] = new Setter[T] {
 
     /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-    def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
-      case UpdaterInput(subject, valueOpt, _) if body.isDefinedAt(subject) =>
-        body(subject)(valueOpt)
+    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+      case input if body.isDefinedAt(input) => body(input)
     }
   }
 
@@ -49,7 +42,7 @@ object Setter {
     new FieldSetter[S,T] {
       def subjectManifest = _subjectManifest
 
-      def set(subject: S, valueOpt: Option[T], items: List[AnyRef]) {
+      def set(subject: S, valueOpt: Option[T], context: GetterInput) {
         body(subject)(valueOpt)
       }
 
@@ -81,7 +74,7 @@ object Setter {
 object SetterUsingItems {
   @deprecated("use Updater")
   def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]): Setter[T] = new Setter[T] {
-    def setterUsingInput[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
+    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
       case UpdaterInput(subject, valueOpt, context) if body.isDefinedAt((subject, context)) =>
         body((subject, context)).apply(valueOpt)
     }
@@ -93,8 +86,8 @@ object SetterUsingItems {
     new FieldSetter[S,T] with NoGetter[T] {
       def subjectManifest = _subjectManifest
 
-      def set(subject: S, valueOpt: Option[T], items: List[AnyRef]) {
-        body(subject, GetterInput(items))(valueOpt)
+      def set(subject: S, valueOpt: Option[T], context: GetterInput) {
+        body(subject, context)(valueOpt)
       }
 
       override def toString = "SetterUsingItems[" + subjectManifest.erasure.getSimpleName + "]"

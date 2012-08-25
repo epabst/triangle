@@ -328,7 +328,9 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     it("must support easily specifying a setter as a partial function") {
-      val field = Setter[Int] { case subject: mutable.Buffer[Int] => _.foreach(value => subject += value) }
+      val field = Setter[Int] {
+        case UpdaterInput(subject: mutable.Buffer[Int], valueOpt, _) => valueOpt.foreach(value => subject += value)
+      }
       val buffer = mutable.Buffer[Int](1, 2)
       field.updateWithValue(buffer, Some(3))
       buffer.toList must be (List(1, 2, 3))
