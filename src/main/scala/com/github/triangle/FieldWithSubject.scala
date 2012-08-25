@@ -18,12 +18,13 @@ trait FieldWithSubject[S <: AnyRef,T] extends PortableField[T] with SubjectField
       def subjectManifest = self.subjectManifest
     }
 
-  def withTransformer(body: S => Option[T] => S): FieldWithSubject[S,T] = new Field[T](this + Transformer(body)(subjectManifest)) with FieldWithSubject[S,T] {
-    def subjectManifest = self.subjectManifest
-  }
+  def withUpdater(body: S => Option[T] => S): FieldWithSubject[S,T] =
+    new Field[T](this + SubjectUpdater(body)(subjectManifest)) with FieldWithSubject[S,T] {
+      def subjectManifest = self.subjectManifest
+    }
 
-  def withTransformer(body: S => T => S, clearer: S => S): FieldWithSubject[S,T] =
-    new Field[T](this + Transformer(body, clearer)(subjectManifest)) with FieldWithSubject[S,T] {
+  def withUpdater(body: S => T => S, clearer: S => S): FieldWithSubject[S,T] =
+    new Field[T](this + SubjectUpdater(body, clearer)(subjectManifest)) with FieldWithSubject[S,T] {
       def subjectManifest = self.subjectManifest
     }
 }

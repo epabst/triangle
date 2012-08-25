@@ -6,20 +6,22 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.scalatest.matchers.MustMatchers
 
-/** A Specification for [[com.github.triangle.Transformer]].
+/** A Specification for [[com.github.triangle.Updater]].
   * @author Eric Pabst (epabst@gmail.com)
   */
 @RunWith(classOf[JUnitRunner])
-class TransformerSpec extends Spec with MustMatchers {
+class UpdaterSpec extends Spec with MustMatchers {
   case class MyEntity(name: String = "(none)")
 
   it("must provide a convenient clearer") {
-    Transformer[String,String]((string: String) => (v: String) => string + v, noTransformerForEmpty[String])
+    SubjectUpdater[String,String]((string: String) => (v: String) => string + v, noUpdaterForEmpty[String])
   }
 
-  describe("TransformerUsingItems") {
-    val stringField: PortableField[String] =
-      TransformerUsingItems((e: MyEntity, input) => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")))
+  describe("Updater") {
+    val stringField: PortableField[String] = Updater {
+      case UpdaterInput(e: MyEntity, valueOpt, context) =>
+        e.copy(name = valueOpt.getOrElse("(none)") + context.items.mkString("-", "-", ""))
+    }
 
     it("must allow using the items while setting") {
       val entity = stringField.updateWithValue(new MyEntity(), Some("James"), GetterInput("Bond", "007"))
@@ -27,8 +29,9 @@ class TransformerSpec extends Spec with MustMatchers {
     }
 
     it("must be constructable with a partial function") {
-      val field: PortableField[String] = TransformerUsingItems[String] {
-        case (e: MyEntity, input) if input.items.contains("Bond") => v => e.copy(name = v.getOrElse("(none)") + input.items.mkString("-", "-", ""))
+      val field: PortableField[String] = Updater[String] {
+        case UpdaterInput(e: MyEntity, valueOpt, context) if context.items.contains("Bond") =>
+          e.copy(name = valueOpt.getOrElse("(none)") + context.items.mkString("-", "-", ""))
       }
       val entity = field.updateWithValue(new MyEntity(), Some("James"), GetterInput.single("Dean"))
       entity.name must be ("(none)")

@@ -267,8 +267,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
       it("must use all updaters of a field") {
         val stringField = mapField[String]("greeting") +
-                Transformer((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
-                  (map: Map[String,String]) => map)
+          SubjectUpdater((map: Map[String,String]) => ignored => map + ("greeting" -> map("greeting").toUpperCase),
+            (map: Map[String,String]) => map)
         //qualified to point out that it's immutable
         val result: Map[String,String] = stringField.updateWithValue(Map.empty[String,String], Some("hello"))
         result.get("greeting") must be (Some("HELLO"))
@@ -277,7 +277,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("copyAndTransform") {
       it("must use an initial and some data") {
-        val stringField = Transformer[Map[String,String],String](
+        val stringField = SubjectUpdater[Map[String,String],String](
           (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
           mapField[String]("greeting")
 
@@ -337,15 +337,17 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     it("must support easily specifying a updater as a partial function") {
-      val field = Transformer[Int] {
-        case subject: List[Int] => value => value.map(_ +: subject).getOrElse(subject)
+      val field = Updater[Int] {
+        case UpdaterInput(subject: List[Int], valueOpt, _) => valueOpt.map(_ +: subject).getOrElse(subject)
       }
       field.updateWithValue(List(2, 3), Some(1)) must be (List(1, 2, 3))
     }
 
-    describe("Transformer") {
+    describe("Updater") {
       it("must support None as the value") {
-        val field = Transformer[Int] { case subject: List[Int] => _.map(value => value +: subject).getOrElse(subject) }
+        val field = Updater[Int] {
+          case UpdaterInput(subject: List[Int], valueOpt, _) => valueOpt.map(_ +: subject).getOrElse(subject)
+        }
         field.copyAndTransform(None, List(2, 3)) must be (List(2, 3))
       }
     }

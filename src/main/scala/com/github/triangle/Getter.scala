@@ -15,7 +15,7 @@ trait NoGetter[T] extends PortableField[T] {
   def getter = PortableField.emptyPartialFunction
 }
 
-trait Getter[T] extends NoTransformer[T]
+trait Getter[T] extends NoUpdater[T]
 
 trait SingleGetter[T] extends Getter[T] {
   /** PartialFunction for getting an optional value from an AnyRef. */
