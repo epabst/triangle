@@ -13,19 +13,19 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
 
   def foreach[U](f: (BaseField) => U) { fields.foreach(f) }
 
-  def copyFrom(from: AnyRef) = copyFromUsingCopyMethod[AnyRef](f => f.copyFrom(_), from)
+  @scala.inline
+  final def copyFrom(from: AnyRef) = copyFrom(GetterInput.single(from))
 
-  def copyFrom(fromItems: GetterInput) = copyFromUsingCopyMethod[GetterInput](f => f.copyFrom(_), fromItems)
-
-  private def copyFromUsingCopyMethod[A](baseFieldCopyMethod: BaseField => (A => PortableValue), from: A): PortableValue =
-    new PortableValueSeq(fields.map(f => baseFieldCopyMethod(f)(from)))
+  def copyFrom(input: GetterInput) = new PortableValueSeq(fields.map(f => f.copyFrom(input)))
 
   /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
-  def copyableTo(subject: AnyRef): FieldList = copyableTo(subject, GetterInput.empty)
+  @scala.inline
+  final def copyableTo(subject: AnyRef): FieldList = copyableTo(subject, GetterInput.empty)
 
   /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
-  def copyableTo(subject: AnyRef, contextItems: GetterInput): FieldList =
-    copyableTo(UpdaterInput(subject, contextItems))
+  @scala.inline
+  final def copyableTo(subject: AnyRef, context: GetterInput): FieldList =
+    copyableTo(UpdaterInput(subject, context))
 
   /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
   def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = deepCollect {

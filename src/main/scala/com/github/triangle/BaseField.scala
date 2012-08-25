@@ -49,5 +49,5 @@ trait BaseField {
     * </pre>
     */
   // Default implementation only checks this field.  This should be overridden for any field wrapping other fields.
-  def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = f.lift(this).toSeq
+  def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = f.lift.apply(this).toSeq
 }

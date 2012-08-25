@@ -28,6 +28,7 @@ class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T
 }
 
 /** A PortableField that delegates to another field that modifies part of the subject, as defined by {{{subjectGetter}}}. */
+//todo rename to NestedField and make subjectGetter be a PortableField
 trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSetter[T] {
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
