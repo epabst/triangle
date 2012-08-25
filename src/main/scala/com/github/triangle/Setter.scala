@@ -69,28 +69,3 @@ object Setter {
     }
   }
 }
-
-@deprecated("use Updater")
-object SetterUsingItems {
-  @deprecated("use Updater")
-  def apply[T](body: PartialFunction[(AnyRef,GetterInput),Option[T] => Unit]): Setter[T] = new Setter[T] {
-    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
-      case UpdaterInput(subject, valueOpt, context) if body.isDefinedAt((subject, context)) =>
-        body((subject, context)).apply(valueOpt)
-    }
-  }
-
-  /** Defines setter field for a mutable type with Option as the value type. */
-  @deprecated("use Updater")
-  def apply[S <: AnyRef,T](body: (S, GetterInput) => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): FieldSetter[S,T] = {
-    new FieldSetter[S,T] with NoGetter[T] {
-      def subjectManifest = _subjectManifest
-
-      def set(subject: S, valueOpt: Option[T], context: GetterInput) {
-        body(subject, context)(valueOpt)
-      }
-
-      override def toString = "SetterUsingItems[" + subjectManifest.erasure.getSimpleName + "]"
-    }
-  }
-}

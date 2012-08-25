@@ -12,22 +12,23 @@ import org.scalatest.matchers.MustMatchers
 class SetterSpec extends Spec with MustMatchers {
   class MyEntity(var name: String = "(none)")
 
-  describe("SetterUsingItems") {
-    val stringField: PortableField[String] =
-      SetterUsingItems((e: MyEntity, input) => v => e.name = v.getOrElse("(none)") + input.items.mkString("-", "-", ""))
-    
-    it("must allow using the items while setting") {
-      val entity = new MyEntity()
-      stringField.updateWithValue(entity, Some("James"), GetterInput("Bond", "007"))
-      entity.name must be ("James-Bond-007")
-    }
+  val stringField: PortableField[String] = Setter[String] {
+    case UpdaterInput(e: MyEntity, valueOpt, input) =>
+      e.name = valueOpt.getOrElse("(none)") + input.items.mkString("-", "-", "")
+  }
 
-    it("must be constructable with a partial function") {
-      val field: PortableField[String] = SetterUsingItems[String] {
-        case (e: MyEntity, input) if input.items.contains("Bond") => v => e.name = v.getOrElse("(none)") + input.items.mkString("-", "-", "")
-      }
-      val entity = new MyEntity()
-      field.updater.isDefinedAt(UpdaterInput(entity, Some("James"), GetterInput.single("Dean"))) must be (false)
+  it("must allow using the items while setting") {
+    val entity = new MyEntity()
+    stringField.updateWithValue(entity, Some("James"), GetterInput("Bond", "007"))
+    entity.name must be ("James-Bond-007")
+  }
+
+  it("must be constructable with a partial function") {
+    val field: PortableField[String] = Setter[String] {
+      case UpdaterInput(e: MyEntity, valueOpt, input) if input.items.contains("Bond") =>
+        e.name = valueOpt.getOrElse("(none)") + input.items.mkString("-", "-", "")
     }
+    val entity = new MyEntity()
+    field.updater.isDefinedAt(UpdaterInput(entity, Some("James"), GetterInput.single("Dean"))) must be (false)
   }
 }
