@@ -109,8 +109,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
-    if (updater.isDefinedAt(UpdaterInput(initial, input))) {
-      copyFrom(input).update(initial, input)
+    val updaterInput = UpdaterInput(initial, input)
+    if (updater.isDefinedAt(updaterInput)) {
+      copyFrom(input).update(updaterInput)
     } else {
       debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of updater.")
       initial

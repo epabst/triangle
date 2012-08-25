@@ -59,7 +59,7 @@ class PortableValueSeq(portableValues: Traversable[PortableValue]) extends Porta
   def update[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]): S = {
     val initial = updaterInput.subject
     debug("Updating " + initial + " using PortableValue with " + portableValues)
-    portableValues.foldLeft(initial)((subject, portableValue) => portableValue.update(updaterInput))
+    portableValues.foldLeft(initial)((subject, portableValue) => portableValue.update(updaterInput.copy(subject = subject)))
   }
 
   def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption

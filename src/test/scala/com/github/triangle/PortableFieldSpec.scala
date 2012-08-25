@@ -49,7 +49,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     it("must extract values from items") {
-      val LengthField(Some(length)) = List(new Object, "Hello", new Object)
+      val LengthField(Some(length)) = GetterInput(new Object, "Hello", new Object)
       length must be (5)
     }
 

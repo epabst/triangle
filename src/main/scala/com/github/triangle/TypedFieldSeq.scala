@@ -17,7 +17,7 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]]) extends PortableFi
   def updater[S <: AnyRef] = {
     case input @ UpdaterInput(subject, valueOpt, context) if fields.exists(_.updater.isDefinedAt(input)) =>
       val definedFields = fields.filter(_.updater.isDefinedAt(input))
-      definedFields.foldLeft(subject)((subject, field) => field.updater(input))
+      definedFields.foldLeft(subject)((subject, field) => field.updater(input.copy(subject = subject)))
   }
 
   override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {
