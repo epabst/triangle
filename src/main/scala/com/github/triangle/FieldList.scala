@@ -28,19 +28,21 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
     copyableTo(UpdaterInput(subject, context))
 
   /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
-  def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = deepCollect {
-    case (field: PortableField[_]) if field.updater.isDefinedAt(updaterInput) => field
-  }
+  def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = FieldList(deepCollect {
+    case (field: PortableField[_]) if field.isUpdaterDefinedAt(updaterInput) => field
+  })
 
   def copyAndUpdate[S <: AnyRef](dataItems: GetterInput, initial: S): S = {
     fields.foldLeft(initial)((subject, field) => field.copyAndUpdate(dataItems, subject))
   }
 
-  override def deepCollect[B](f: PartialFunction[BaseField, B]) = fields.toList.flatMap(_.deepCollect(f))
+  override def deepCollect[B](f: PartialFunction[BaseField, B]): Seq[B] = fields.toSeq.flatMap(_.deepCollect(f))
 }
 
 object FieldList {
   def apply(_fields: BaseField*): FieldList = toFieldList(_fields)
 
-  implicit def toFieldList(list: Traversable[BaseField]): FieldList = new FieldList { def fields = list }
+  def apply(list: Traversable[BaseField]): FieldList = new FieldList { def fields = list }
+
+  implicit def toFieldList(list: Traversable[BaseField]): FieldList = FieldList(list)
 }

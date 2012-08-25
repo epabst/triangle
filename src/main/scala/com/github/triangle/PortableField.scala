@@ -105,6 +105,8 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
+  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, Nothing]): Boolean = updater.isDefinedAt(input)
+
   //inherited
   def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
     if (updater.isDefinedAt(UpdaterInput(initial, input))) {
