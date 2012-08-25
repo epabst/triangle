@@ -104,14 +104,14 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("copyAndTransform") {
+  describe("copyAndUpdate") {
     it("temporary: must have the new value and the original 'from' available for the updater to use") {
-      val integer = fieldWithSetterUsingContext.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
+      val integer = fieldWithSetterUsingContext.copyAndUpdate(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
     it("must have the new value and the original 'from' available for the updater to use") {
-      val integer = baseFieldWithSetterUsingContext.copyAndTransform(Set(1,0,3), new AtomicInteger(30))
+      val integer = baseFieldWithSetterUsingContext.copyAndUpdate(Set(1,0,3), new AtomicInteger(30))
       integer.get() must be (4)
     }
 
@@ -122,14 +122,14 @@ abstract class BaseFieldContractSpec extends Spec with MustMatchers {
     }
   }
 
-  describe("copyAndTransformWithItem") {
+  describe("copyAndUpdate(GetterInput, ...)") {
     it("must have the new value and the original items available for the updater to use") {
-      val integer = baseFieldWithSetterUsingContext.copyAndTransformWithItem(GetterInput(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
+      val integer = baseFieldWithSetterUsingContext.copyAndUpdate(GetterInput(PortableField.UseDefaults, Set(1,0,3)), new AtomicInteger(30))
       integer.get() must be (104)
     }
   }
 
-  describe("copyFrom then transform with contextItems") {
+  describe("copyFrom then update with context") {
     it("must have the new value and the original items available for the updater to use") {
       val portableValue = baseFieldWithSetterUsingContext.copyFrom(UseDefaults)
       val integer = portableValue.update(new AtomicInteger(30), GetterInput.single(Set(1,0,3)))

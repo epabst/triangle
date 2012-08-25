@@ -32,14 +32,8 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
     case (field: PortableField[_]) if field.updater.isDefinedAt(updaterInput) => field
   }
 
-  def transform[S <: AnyRef](initial: S, data: AnyRef): S = copyAndTransform(data, initial)
-
-  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
-    fields.foldLeft(initial)((subject, field) => field.copyAndTransform(data, subject))
-  }
-
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: GetterInput, initial: S): S = {
-    fields.foldLeft(initial)((subject, field) => field.copyAndTransformWithItem(dataItems, subject))
+  def copyAndUpdate[S <: AnyRef](dataItems: GetterInput, initial: S): S = {
+    fields.foldLeft(initial)((subject, field) => field.copyAndUpdate(dataItems, subject))
   }
 
   override def deepCollect[B](f: PartialFunction[BaseField, B]) = fields.toList.flatMap(_.deepCollect(f))

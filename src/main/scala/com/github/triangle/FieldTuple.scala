@@ -29,7 +29,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
       new Field[T](selfField + updaterField) {
         override def deepCollect[R](f: PartialFunction[BaseField, R]) = {
           val lifted = f.lift
-          //don't traverse theTransformer since it duplicates the fields within selfField
+          //don't traverse updaterField since it duplicates the fields within selfField
           lifted(this).orElse(lifted(selfField)).map(Seq(_)).getOrElse(selfField.deepCollect(f))
         }
       }

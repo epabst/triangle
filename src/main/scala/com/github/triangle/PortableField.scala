@@ -97,21 +97,16 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   /*
    * PartialFunction for updating an AnyRef using an optional value and context.
-   * {{{updater(UpdaterInput(foo, value, GetterInput(...))}}} should return an updated version of foo
+   * {{{updater(UpdaterInput(foo, valueOpt, GetterInput(...))}}} should return an updated version of foo
    * (which could be the same instance if mutable).
-   * Note: Implementations usually must specify the return type to compile properly
+   * Note: Implementations usually must specify the return type to compile properly.
    * The parameter's subject is what will be updated, whether immutable or mutable.
    * The return value is ignored if the subject is mutable (and presumably updated in place).
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
   //inherited
-  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S = {
-    copyAndTransformWithItem(GetterInput.single(data), initial)
-  }
-
-  //inherited
-  def copyAndTransformWithItem[S <: AnyRef](input: GetterInput, initial: S): S = {
+  def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
     if (updater.isDefinedAt(UpdaterInput(initial, input))) {
       copyFrom(input).update(initial, input)
     } else {

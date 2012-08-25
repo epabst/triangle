@@ -12,7 +12,7 @@ object SubjectUpdater {
   /**
    * [[com.github.triangle.PortableField]] support for updating a subject using a value if {{{subject}}} is of type S.
    * It's called "single" because it doesn't use a GetterInput for context.
-   * @tparam S the Subject type to transform using the value.
+   * @tparam S the Subject type to update using the value.
    * @tparam T the type of the value
    */
   def apply[S <: AnyRef, T](body: S => Option[T] => S)(implicit _subjectManifest: ClassManifest[S]): SubjectUpdater[S,T] =
@@ -31,7 +31,7 @@ object SubjectUpdater {
    * [[com.github.triangle.PortableField]] support for updating a subject using a value if {{{subject}}} is of type S.
    * body operates on a value directly, rather than on an Option.
    * The clearer is used when the value is None.
-   * @tparam S the Subject type to transform using the value.
+   * @tparam S the Subject type to update using the value.
    * @param clearer a function or 'noUpdaterForEmpty'
    */
   def apply[S <: AnyRef, T](body: S => T => S, clearer: S => S)(implicit subjectManifest: ClassManifest[S]): PortableField[T] =

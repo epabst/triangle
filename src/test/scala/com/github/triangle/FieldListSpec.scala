@@ -62,27 +62,27 @@ class FieldListSpec extends BaseFieldContractSpec {
       map.contains("price") must be (false)
     }
 
-    it("must copyAndTransform using each Field") {
+    it("must copyAndUpdate using each Field") {
       val countField = mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
-      val result = fields.copyAndTransform(data = immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10),
+      val result = fields.copyAndUpdate(data = immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10),
         initial = immutable.Map.empty[String,Any])
       result must be (immutable.Map[String,Any]("count" -> 10, "price" -> 100.0))
     }
 
-    it("must transform using the first applicable item for each Field") {
+    it("must update using the first applicable item for each Field") {
       val countField = default(12) + mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
-      val result = fields.copyAndTransformWithItem(dataItems = List(PortableField.UseDefaults, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)),
+      val result = fields.copyAndUpdate(GetterInput(PortableField.UseDefaults, immutable.Map[String, Any]("ignored" -> "bar", "price" -> 100.0)),
         initial = immutable.Map.empty[String,Any])
       result must be (immutable.Map[String,Any]("count" -> 12, "price" -> 100.0))
     }
   }
 
   describe("copyableTo") {
-    it("must only return fields that can transform the given subject") {
+    it("must only return fields that can update the given subject") {
       val countField = mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val adjustmentField = adjustment[StringBuffer](_.append(" and more"))
@@ -91,7 +91,7 @@ class FieldListSpec extends BaseFieldContractSpec {
       fields.copyableTo(new StringBuffer).toString must be (FieldList(adjustmentField).toString())
     }
 
-    it("must only return fields that can transform the given subject with the given contextItems") {
+    it("must only return fields that can update the given subject with the given context") {
       val appendField = Setter[String] {
         case UpdaterInput(sb: StringBuffer, valueOpt, GetterInput(List(suffix: String))) =>
           sb.append(valueOpt.getOrElse("none")).append(suffix)

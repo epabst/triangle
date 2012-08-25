@@ -36,22 +36,19 @@ trait BaseField {
   /** Copies this field from the first applicable item in {{{fromItems}}} to {{{to}}}, if possible. */
   def copy(fromItems: GetterInput, to: AnyRef) { copyFrom(fromItems).update(to, fromItems) }
 
-  /** Transforms the {{{initial}}} subject using the {{{data}}} for this field..
-    * @return the transformed subject, which could be the initial instance
-    */
-  def copyAndTransform[S <: AnyRef](data: AnyRef, initial: S): S
+  /**
+   * Updates the {{{initial}}} subject using the {{{data}}} for this field..
+   * @return the updated subject, which could be the initial instance
+   */
+  final def copyAndUpdate[S <: AnyRef](data: AnyRef, initial: S): S = {
+    copyAndUpdate(GetterInput.single(data), initial)
+  }
 
-  /** Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
-    * @return the transformed subject, which could be the initial instance
-    */
-  @deprecated("use GetterInput instead of List")
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: List[AnyRef], initial: S): S =
-    copyAndTransformWithItem(GetterInput(dataItems), initial)
-
-  /** Transforms the {{{initial}}} subject using the first applicable item in {{{dataItems}}} for this field..
-    * @return the transformed subject, which could be the initial instance
-    */
-  def copyAndTransformWithItem[S <: AnyRef](dataItems: GetterInput, initial: S): S
+  /**
+   * Updates the {{{initial}}} subject using the applicable items in {{{getterInput}}} for this field..
+   * @return the updated subject, which could be the initial instance
+   */
+  def copyAndUpdate[S <: AnyRef](getterInput: GetterInput, initial: S): S
 
   /** Traverses all of the PortableFields in this PortableField, returning the desired information.
     * Anything not matched will be traversed deeper, if possible, or else ignored.
