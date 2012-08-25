@@ -136,34 +136,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   }
 
   /** Adds two PortableField objects together. */
-  def +(other: PortableField[T]): PortableField[T] = {
-    new PortableField[T] {
-      override def toString = self + " + " + other
-
-      override def getter = {
-        case items if self.getter.isDefinedAt(items) || other.getter.isDefinedAt(items) => {
-          val values = List(self, other).view.map(_.getter).filter(_.isDefinedAt(items)).map(_(items))
-          values.find(_.isDefined).getOrElse(None)
-        }
-      }
-
-      /** Combines the two updaters, calling only applicable ones (not just the first though). */
-      override def updater[S <: AnyRef] = {
-        case input @ UpdaterInput(subject, valueOpt, context) if self.updater.isDefinedAt(input) || other.updater.isDefinedAt(input) =>
-          val definedFields = List(self, other).filter(_.updater.isDefinedAt(input))
-          definedFields.foldLeft(subject)((subject, field) => field.updater(input))
-      }
-
-      override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {
-        super.deepCollect[R](f) match {
-          case Nil =>
-            val lifted = f.lift
-            List(self, other).flatMap(field => lifted(field).map(Seq[R](_)).getOrElse(field.deepCollect(f)))
-          case x => x
-        }
-      }
-    }
-  }
+  def +(other: PortableField[T]): PortableField[T] = TypedFieldSeq(self, other)
 }
 
 /**
