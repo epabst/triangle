@@ -11,6 +11,12 @@ package com.github.triangle
  */
 
 case class GetterInput(items: Seq[AnyRef]) {
+  items.foreach { item =>
+    if (item.isInstanceOf[GetterInput]) {
+      throw new IllegalArgumentException("GetterInput cannot be nested: " + items.mkString(", "))
+    }
+  }
+
   def +:(item: AnyRef): GetterInput = GetterInput(item +: items)
 }
 

@@ -37,7 +37,15 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * @throws MatchError if this field is undefined for the given AnyRef
    */
   def getValue(readable: AnyRef): Option[T] = {
-    val result = getter(GetterInput.single(readable))
+    getValue(GetterInput.single(readable))
+  }
+
+  /**
+   * Get an optional value from the given AnyRef.
+   * @throws MatchError if this field is undefined for the given AnyRef
+   */
+  def getValue(input: GetterInput): Option[T] = {
+    val result = getter(input)
     require(result != null, this + "'s getter is non-functional.  It should never return a null.")
     result
   }
@@ -48,6 +56,13 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * @throws MatchError if this field is undefined for the given AnyRef
    */
   def apply(readable: AnyRef): Option[T] = getValue(readable)
+
+  /**
+   * Get an optional value from the given GetterInput.
+   * This is here for convenience as an alias for {{{getValue}}}, although that may be more readable.
+   * @throws MatchError if this field is undefined for the given AnyRef
+   */
+  def apply(input: GetterInput): Option[T] = getValue(input)
 
   /** Gets the value, similar to {{{Map.apply}}}, and the value must not be None.
     * @see [[com.github.triangle.PortableField.getter]]
