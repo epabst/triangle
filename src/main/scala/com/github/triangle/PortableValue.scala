@@ -53,7 +53,7 @@ class PortableValue1[T](field: PortableField[T], value: Option[T]) extends Tuple
   override def toString() = value.toString
 }
 
-class PortableValueSeq(portableValues: Traversable[PortableValue]) extends PortableValue with Logging {
+case class PortableValueSeq(portableValues: Traversable[PortableValue]) extends PortableValue with Logging {
   protected def logTag = "triangle"
 
   def update[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]): S = {
@@ -68,5 +68,7 @@ class PortableValueSeq(portableValues: Traversable[PortableValue]) extends Porta
 }
 
 object PortableValue {
+  lazy val empty = new PortableValueSeq(Traversable.empty)
+
   def apply(portableValues: PortableValue1[_]*): PortableValue = new PortableValueSeq(portableValues)
 }
