@@ -1,7 +1,7 @@
 package com.github.triangle
 
 import com.github.triangle.PortableField._
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.scalatest.matchers.MustMatchers
@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
   * @author Eric Pabst (epabst@gmail.com)
   */
 @RunWith(classOf[JUnitRunner])
-class UpdaterSpec extends Spec with MustMatchers {
+class UpdaterSpec extends FunSpec with MustMatchers {
   case class MyEntity(name: String = "(none)")
 
   it("must provide a convenient clearer") {

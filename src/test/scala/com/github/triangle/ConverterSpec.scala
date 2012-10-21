@@ -3,7 +3,7 @@ package com.github.triangle
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import Converter._
 import GenericConverter._
 import java.util.{Calendar, GregorianCalendar, Date}
@@ -14,7 +14,7 @@ import java.text.DateFormat
   */
 
 @RunWith(classOf[JUnitRunner])
-class ConverterSpec extends Spec with MustMatchers {
+class ConverterSpec extends FunSpec with MustMatchers {
   describe("anyToString") {
     it("must use the Object.toString method") {
       val from = new Object

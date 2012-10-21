@@ -3,7 +3,7 @@ package com.github.triangle
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import PortableField._
 import scala.collection.mutable
 
@@ -12,7 +12,7 @@ import scala.collection.mutable
   */
 
 @RunWith(classOf[JUnitRunner])
-class FieldTupleSpec extends Spec with MustMatchers {
+class FieldTupleSpec extends FunSpec with MustMatchers {
   val intField = default[Int](10) + mapField("int")
   val stringField = default[String]("Hello") + mapField("string")
   val doubleField = default[Double](11.0) + mapField("double")

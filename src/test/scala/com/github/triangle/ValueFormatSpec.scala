@@ -3,7 +3,7 @@ package com.github.triangle
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import java.text.NumberFormat
 import ValueFormat._
 import java.util.{Calendar, GregorianCalendar}
@@ -13,7 +13,7 @@ import java.util.{Calendar, GregorianCalendar}
   */
 
 @RunWith(classOf[JUnitRunner])
-class ValueFormatSpec extends Spec with MustMatchers {
+class ValueFormatSpec extends FunSpec with MustMatchers {
   describe("basicFormat") {
     it("must convert between basic types") {
       itMustConvertBetweenTypes[Long](123)

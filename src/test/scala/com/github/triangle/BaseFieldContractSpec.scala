@@ -4,7 +4,7 @@ import com.github.triangle.PortableField._
 import actors.threadpool.AtomicInteger
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.matchers.MustMatchers
 import collection.mutable
 
@@ -12,7 +12,7 @@ import collection.mutable
   * @author Eric Pabst (epabst@gmail.com)
   */
 @RunWith(classOf[JUnitRunner])
-abstract class BaseFieldContractSpec extends Spec with MustMatchers {
+abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
   def toBaseField[T](field: PortableField[T]): BaseField
 
   object StringIdentityField extends Field(identityField[String])
