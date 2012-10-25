@@ -6,7 +6,7 @@ import scala.AnyRef
   * Use the right subtype for the correct -arity such as FieldTuple3.
   * @author Eric Pabst (epabst@gmail.com)
   */
-trait FieldTuple extends TypedProduct[PortableField[_]] {
+trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
   /** a type which is a Tuple for the field values such as (Option[A], Option[B], Option[C]). */
   type ValuesTuple <: Product
 
@@ -64,6 +64,8 @@ trait FieldTuple extends TypedProduct[PortableField[_]] {
     case x: AnyRef => this.getClass == x.getClass
     case _ => false
   }
+
+  protected def packageNamesToExcludeForOriginToString = Seq(classOf[FieldTuple].getPackage.getName)
 }
 
 /** The implicit toTupleXOfSomes defs are useful when defining a updater for a FieldTuple. */

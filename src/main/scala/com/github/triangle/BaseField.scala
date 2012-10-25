@@ -1,11 +1,13 @@
 package com.github.triangle
 
 /** A trait for a typeless [[com.github.triangle.PortableField]] for convenience such as when defining a List of heterogeneous Fields. */
-trait BaseField {
+trait BaseField extends OriginToString {
   lazy val defaultValue: PortableValue = copyFrom(PortableField.UseDefaults)
 
   // For use with when the Logging trait is mixed-in
   protected def logTag = "triangle"
+
+  protected def packageNamesToExcludeForOriginToString = Seq(classOf[BaseField].getPackage.getName)
 
   /** Copies this field, the same as {{{copy(AnyRef,AnyRef)}}} except that
     * the copying from {{{from}}} happens immediately (on the current thread),
