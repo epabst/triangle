@@ -12,7 +12,11 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]]) extends PortableFi
   def getter = {
     case items if getters.exists(_.isDefinedAt(items)) =>
       val definedGetters = getters.filter(_.isDefinedAt(items))
-      val values = definedGetters.map(_.apply(items))
+      val values = definedGetters.map { definedGetter =>
+        val value = definedGetter.apply(items)
+        require(value != null, definedGetter + " is non-functional.  It should never return a null.")
+        value
+      }
       values.find(_.isDefined).getOrElse(None)
   }
 
