@@ -15,9 +15,9 @@ trait FieldWithDelegate[T] extends PortableField[T] {
 trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   protected def delegate: PortableField[T]
 
-  override def getter = delegate.getter
+  override def getter = delegate.getterVal
 
-  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updater
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updaterVal
 }
 
 /** a PortableField[T] that wraps another for use with creating field objects.
@@ -33,15 +33,17 @@ trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSe
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
 
+  private lazy val delegateGetter = delegate.getterVal
+
   def getter: PartialFunction[GetterInput,Option[T]] = {
-    case input: GetterInput if delegate.getter.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
-      delegate.getter(GetterInput(input.items.collect(subjectGetter)))
+    case input: GetterInput if delegateGetter.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
+      delegateGetter.apply(GetterInput(input.items.collect(subjectGetter)))
   }
 
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
   def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
     case input @ UpdaterInput(subject, valueOpt, context)
-      if subjectGetter.isDefinedAt(subject) && delegate.updater.isDefinedAt(input.copy(subject = subjectGetter(subject))) =>
-        delegate.updater(input.copy(subject = subjectGetter(subject)))
+      if subjectGetter.isDefinedAt(subject) && delegate.updaterVal.isDefinedAt(input.copy(subject = subjectGetter(subject))) =>
+        delegate.updaterVal(input.copy(subject = subjectGetter(subject)))
   }
 }

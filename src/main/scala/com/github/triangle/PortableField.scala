@@ -32,6 +32,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
     */
   def getter: PartialFunction[GetterInput,Option[T]]
 
+  /** The same as getter, but it is only evaluated once and its toString method is set for debugging. */
+  final lazy val getterVal: PartialFunction[GetterInput,Option[T]] = withToString("getter of " + this)(getter)
+
   /**
    * Get an optional value from the given AnyRef.
    * @throws MatchError if this field is undefined for the given AnyRef
@@ -45,7 +48,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * @throws MatchError if this field is undefined for the given AnyRef
    */
   def getValue(input: GetterInput): Option[T] = {
-    val result = getter(input)
+    val result = getterVal(input)
     require(result != null, this + "'s getter is non-functional.  It should never return a null.")
     result
   }
@@ -80,7 +83,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * }}}
    */
   def unapply(subject: GetterInput): Option[Option[T]] = subject match {
-    case items: GetterInput if getter.isDefinedAt(items) => Some(getter(items))
+    case items: GetterInput if getterVal.isDefinedAt(items) => Some(getterVal(items))
     case _ => None
   }
 
@@ -101,9 +104,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * @return the updated subject, which could be the initial instance
    */
   def update[S <: AnyRef](updaterInput: UpdaterInput[S,T]): S = {
-    val defined = updater[S].isDefinedAt(updaterInput)
+    val defined = updaterVal[S].isDefinedAt(updaterInput)
     if (defined) {
-      updater(updaterInput)
+      updaterVal(updaterInput)
     } else {
       debug("Unable to update " + updaterInput.subject + " with value " + updaterInput.valueOpt + " for field " + this + " with context " + updaterInput.context + ".")
       updaterInput.subject
@@ -120,12 +123,17 @@ trait PortableField[T] extends BaseField with Logging { self =>
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
-  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, Nothing]): Boolean = updater.isDefinedAt(input)
+  private final lazy val _updaterVal: PartialFunction[UpdaterInput[Nothing,T],Nothing] = withToString("updater of " + this)(updater)
+  /** The same as updater, but it is only evaluated once and its toString method is set. */
+  final def updaterVal[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] =
+    _updaterVal.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
+
+  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, Nothing]): Boolean = updaterVal.isDefinedAt(input)
 
   //inherited
   def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
     val updaterInput = UpdaterInput(initial, input)
-    if (updater.isDefinedAt(updaterInput)) {
+    if (updaterVal.isDefinedAt(updaterInput)) {
       copyFrom(input).update(updaterInput)
     } else {
       debug("Unable to " + PortableField.update_with_forField_message(initial, input, this) + " because of updater.")
@@ -136,7 +144,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
   def copyFrom(from: AnyRef): PortableValue1[T] = copyFrom(GetterInput.single(from))
 
   def copyFrom(input: GetterInput): PortableValue1[T] =
-    this -> (if (getter.isDefinedAt(input)) getter(input) else None)
+    this -> (if (getterVal.isDefinedAt(input)) getterVal(input) else None)
 
   override def copy(from: AnyRef, to: AnyRef) {
     copy(GetterInput.single(from), to)
@@ -144,7 +152,7 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   override def copy(input: GetterInput, to: AnyRef) {
-    if (updater.isDefinedAt(UpdaterInput(to, input))) {
+    if (updaterVal.isDefinedAt(UpdaterInput(to, input))) {
       copyFrom(input).update(to, input)
     } else {
       debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")

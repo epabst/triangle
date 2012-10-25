@@ -45,7 +45,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
   def asGetter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
     new Getter[T] with TupleField[T] {
       def getter = {
-        case input if productIterator.forall(_.getter.isDefinedAt(input)) => combiner(valuesTuple(input))
+        case input if productIterator.forall(_.getterVal.isDefinedAt(input)) => combiner(valuesTuple(input))
       }
     }
   }
@@ -108,7 +108,7 @@ case class FieldTuple2[F1,F2](_1: PortableField[F1], _2: PortableField[F2])
 
   def emptyValuesTuple = (None, None)
 
-  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items))
+  def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items))
 
   def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
     val result1 = _1.updateWithValue(subject, values._1)
@@ -122,7 +122,7 @@ case class FieldTuple3[F1,F2,F3](_1: PortableField[F1], _2: PortableField[F2], _
 
   def emptyValuesTuple = (None, None, None)
 
-  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items))
+  def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items))
 
   def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
     val result1 = _1.updateWithValue(subject, values._1)
@@ -138,8 +138,8 @@ case class FieldTuple4[F1,F2,F3,F4](_1: PortableField[F1], _2: PortableField[F2]
 
   def emptyValuesTuple = (None, None, None, None)
 
-  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
-          _4.getter(items))
+  def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
+          _4.getterVal(items))
 
   def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
     val result1 = _1.updateWithValue(subject, values._1)
@@ -156,8 +156,8 @@ case class FieldTuple5[F1,F2,F3,F4,F5](_1: PortableField[F1], _2: PortableField[
 
   def emptyValuesTuple = (None, None, None, None, None)
 
-  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
-          _4.getter(items), _5.getter(items))
+  def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
+          _4.getterVal(items), _5.getterVal(items))
 
   def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
     val result1 = _1.updateWithValue(subject, values._1)
@@ -175,8 +175,8 @@ case class FieldTuple6[F1,F2,F3,F4,F5,F6](_1: PortableField[F1], _2: PortableFie
 
   def emptyValuesTuple = (None, None, None, None, None, None)
 
-  def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
-          _4.getter(items), _5.getter(items), _6.getter(items))
+  def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
+          _4.getterVal(items), _5.getterVal(items), _6.getter(items))
 
   def updateWithValues[S <: AnyRef,T](subject: S, values: ValuesTuple): S = {
     val result1 = _1.updateWithValue(subject, values._1)

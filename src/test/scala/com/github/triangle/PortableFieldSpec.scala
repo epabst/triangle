@@ -311,12 +311,12 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         val mockField = mock[PortableField[String]]
         val field = mapField[String]("foo") + mockField
         expecting {
-          call(mockField.getter).andReturn({
+          call(mockField.getterVal).andReturn({
             case GetterInput(List(PortableField.UseDefaults, "String")) => Some("success")
           }).anyTimes
         }
         whenExecuting(mockField) {
-          field.getter(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
+          field.getterVal(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
         }
       }
     }
