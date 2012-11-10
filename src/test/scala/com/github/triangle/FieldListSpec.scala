@@ -49,24 +49,11 @@ class FieldListSpec extends BaseFieldContractSpec {
       map.get("price") must be (Some(300.00))
     }
 
-    it("must return the Fields that were not copied") {
-      val countField = default[Int](10) + mapField("count")
-      val priceField = mapField[Double]("price")
-      val fields = FieldList(countField, priceField)
-      val map = mutable.Map[String, Any]()
-
-      //copy where only one field has an accessor
-      fields.copy(PortableField.UseDefaults, map)
-      map.contains("count") must be (true)
-      countField.getValue(map) must be (Some(10))
-      map.contains("price") must be (false)
-    }
-
     it("must copyAndUpdate using each Field") {
       val countField = mapField[Int]("count")
       val priceField = mapField[Double]("price")
       val fields = FieldList(countField, priceField)
-      val result = fields.copyAndUpdate(data = immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10),
+      val result = fields.copyAndUpdate(immutable.Map[String,Any]("ignored" -> "bar", "price" -> 100.0, "count" -> 10),
         initial = immutable.Map.empty[String,Any])
       result must be (immutable.Map[String,Any]("count" -> 10, "price" -> 100.0))
     }

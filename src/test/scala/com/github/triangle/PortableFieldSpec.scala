@@ -41,6 +41,11 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         stringField.copy(PortableField.UseDefaults, map)
         map.get("greeting") must be (Some("Hello"))
       }
+
+      it("must not evaluate getter if updater is not applicable") {
+        val stringField = Getter[AnyRef,String](_ => sys.error("should not be used"))
+        stringField.copy(PortableField.UseDefaults, new Object)
+      }
     }
 
     it("must extract values") {
@@ -114,6 +119,17 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
     }
 
     describe("copyFrom") {
+      it("must support copying a None value") {
+        val stringField = mapField("greeting") + optionMapField("reply")
+        val portableValue: PortableValue = stringField.copyFrom(Map.empty[String,Any])
+        portableValue must not(be(null))
+        portableValue.get(stringField) must be (None)
+
+        val map = mutable.Map[String,Option[Any]]()
+        portableValue.update(map)
+        map.apply("reply") must be (None)
+      }
+
       it("must return a working PortableValue if getter isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
         stringField.getValue(PortableField.UseDefaults) must be (Some("Hello"))
@@ -126,7 +142,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
         portableValue.get(stringField) must be (Some("Hello"))
       }
 
-      it("must return a working PortableValue if getter !isDefinedAt") {
+      it("must return a no-op PortableValue if getter !isDefinedAt") {
         val stringField = default("Hello") + mapField("greeting")
         val portableValue: PortableValue = stringField.copyFrom("string")
         portableValue must not(be(null))
@@ -135,7 +151,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
         val map = mutable.Map[String,Any]("greeting" -> "obsolete value")
         portableValue.update(map)
-        map.get("greeting") must be (None)
+        map.get("greeting") must be (Some("obsolete value"))
       }
     }
 
@@ -280,20 +296,28 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
           (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
           mapField[String]("greeting")
 
-        val result = stringField.copyAndUpdate[Map[String,String]](data = Map("greeting" -> "hello", "ignored" -> "foo"), initial = Map("name" -> "George"))
+        val result = stringField.copyAndUpdate[Map[String,String]](Map("greeting" -> "hello", "ignored" -> "foo"), initial = Map("name" -> "George"))
         result must be (Map("greeting" -> "hello", "reply" -> "HELLO", "name" -> "George"))
       }
 
       it("must not update if initial subject is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.copyAndUpdate(data = Map("greeting" -> "hello", "ignored" -> "foo"), initial = "inapplicable data")
+        val result = stringField.copyAndUpdate(Map("greeting" -> "hello", "ignored" -> "foo"), initial = "inapplicable data")
         result must be ("inapplicable data")
       }
 
-      it("must update even if data is not applicable") {
+      it("must not update if data is not applicable") {
         val stringField = mapField[String]("greeting")
-        val result = stringField.copyAndUpdate(data = "inapplicable data", initial = Map[String,String]("greeting" -> "obsolete value"))
-        result must be (Map.empty[String,String])
+        val initial = Map[String, String]("greeting" -> "obsolete value")
+        val result = stringField.copyAndUpdate("inapplicable data", initial)
+        result must be (initial)
+      }
+
+      it("must update if applicable even if value is None") {
+        val stringField = optionMapField[String]("greeting")
+        val data = Map[String, Option[String]]("greeting" -> None)
+        val result = stringField.copyAndUpdate(data, Map.empty[String,Option[Any]])
+        result must be (Map("greeting" -> None))
       }
     }
 

@@ -8,7 +8,15 @@ abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: Class
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
-  def singleGetter = { case subject if subjectManifest.erasure.isInstance(subject) => get(subject.asInstanceOf[S]) }
+  val singleGetter = {
+    case subject if isExpectedType(subject) =>
+      get(subject.asInstanceOf[S])
+  }
+
+  private def isExpectedType(subject: AnyRef): Boolean = {
+    val result = subjectManifest.erasure.isInstance(subject)
+    result
+  }
 }
 
 trait NoGetter[T] extends PortableField[T] {

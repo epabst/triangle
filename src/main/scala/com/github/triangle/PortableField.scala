@@ -83,8 +83,10 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * }}}
    */
   def unapply(subject: GetterInput): Option[Option[T]] = subject match {
-    case items: GetterInput if getterVal.isDefinedAt(items) => Some(getterVal(items))
-    case _ => None
+    case items: GetterInput if getterVal.isDefinedAt(items) =>
+      Some(getterVal(items))
+    case _ =>
+      None
   }
 
   /** An extractor from an AnyRef that matches the value as an Option.
@@ -141,10 +143,15 @@ trait PortableField[T] extends BaseField with Logging { self =>
     }
   }
 
-  def copyFrom(from: AnyRef): PortableValue1[T] = copyFrom(GetterInput.single(from))
+  def copyFrom(from: AnyRef): PortableValue = copyFrom(GetterInput.single(from))
 
-  def copyFrom(input: GetterInput): PortableValue1[T] =
-    this -> (if (getterVal.isDefinedAt(input)) getterVal(input) else None)
+  def copyFrom(input: GetterInput): PortableValue =
+    (if (getterVal.isDefinedAt(input)) {
+      this -> getterVal(input)
+    } else {
+      debug("Unable to copy from " + PortableField.truncate(input) + " for field " + PortableField.truncate(this) + " because of getter.")
+      PortableValue.empty
+    })
 
   override def copy(from: AnyRef, to: AnyRef) {
     copy(GetterInput.single(from), to)
@@ -152,8 +159,9 @@ trait PortableField[T] extends BaseField with Logging { self =>
 
   //inherited
   override def copy(input: GetterInput, to: AnyRef) {
-    if (updaterVal.isDefinedAt(UpdaterInput(to, input))) {
-      copyFrom(input).update(to, input)
+    val updaterInput = UpdaterInput(to, input)
+    if (updaterVal.isDefinedAt(updaterInput)) {
+      copyFrom(input).update(updaterInput)
     } else {
       debug("Unable to copy" + PortableField.from_to_for_field_message(input, to, this)  + " due to setter.")
     }
@@ -207,6 +215,10 @@ object PortableField {
     override def toString = "default(" + value + ")"
   }
 
+  /**
+   * A PortableField that works with Scala Maps that considers all Maps as applicable and the values are direct (not of type Option).
+   * @see [[com.github.triangle.PortableField.optionMapFieldWithKey]]
+   */
   def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
     val delegate = Getter[collection.Map[K,_ <: T],T](_.get(key)) +
       Updater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
@@ -215,7 +227,38 @@ object PortableField {
     override def toString = "mapField(" + key + ")"
   }
 
+  /**
+   * A PortableField that works with Scala Maps that considers all Maps as applicable and the values are direct (not of type Option).
+   * @see [[com.github.triangle.PortableField.optionMapFieldWithKey]]
+   */
   def mapField[T](name: String): PortableField[T] = mapFieldWithKey[T,String](name)
+
+  private def hasValueThatIsAnOption[K](map: collection.Map[K,_], key: K): Boolean = map.get(key) match {
+    case Some(option: Option[_]) => true
+    case _ => false
+  }
+
+  /**
+   * A PortableField that works with Scala Maps that considers a Map applicable
+   * if it contains the key, and whose values are of type Option.
+   * This is helpful to avoid overwriting values when copying to some other subject.
+   */
+  def optionMapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
+    val delegate = Getter.single[T]({
+      case map: collection.Map[K, _] if hasValueThatIsAnOption(map, key) =>
+        map.apply(key).asInstanceOf[Option[T]]
+    }) + Updater((m: Map[K,_ >: Option[T]]) => (valueOpt: Option[T]) => m + (key -> valueOpt)) +
+      Setter((m: mutable.Map[K,_ >: Option[T]]) => (vOpt: Option[T]) => m.put(key, vOpt))
+
+    override def toString = "optionMapField(" + key + ")"
+  }
+
+  /**
+   * A PortableField that works with Scala Maps that considers a Map applicable
+   * if it contains the key, and whose values are of type Option.
+   * This is helpful to avoid overwriting values when copying to some other subject.
+   */
+  def optionMapField[T](name: String): PortableField[T] = optionMapFieldWithKey[T,String](name)
 
   /** Adjusts the subject if it is of the given type and if Unit is provided as one of the items to copy from. */
   def adjustmentInPlace[S <: AnyRef](adjuster: S => Unit)(implicit subjectManifest: ClassManifest[S]): PortableField[Unit] =

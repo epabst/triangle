@@ -29,6 +29,8 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
       case UpdaterInput(integer: AtomicInteger, valueOpt, IntSetIdentityField(Some(integers))) =>
         integer.set(valueOpt.getOrElse(0) + integers.sum)
     }
+
+    override def toString = "fieldWithSetterUsingContext"
   }
 
   val baseFieldWithSetterUsingContext = toBaseField(default(100) + fieldWithSetterUsingContext)
@@ -50,15 +52,22 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
 
     it("must have the new value and the original 'from' available for the setter to use") {
       val integer = new AtomicInteger(30)
-      baseFieldWithSetterUsingContext.copy(Set(1,0,3), integer)
-      integer.get() must be (4)
+      baseFieldWithSetterUsingContext.copy(GetterInput(Set(1,0,3), UseDefaults), integer)
+      integer.get() must be (104)
     }
 
-    it("must call the setter even if the getter isn't applicable") {
-      val stringField = toBaseField(default("Hello") + mapField("greeting"))
+    it("must call the updater if the getter returned None") {
+      val stringField = toBaseField(optionMapField("greeting"))
       val map = mutable.Map[String,Any]("greeting" -> "Hola")
+      stringField.copy(Map("greeting" -> None), map)
+      map.apply("greeting") must be (None)
+    }
+
+    it("must not call the updater if the getter isn't applicable") {
+      val stringField = toBaseField(optionMapField("greeting"))
+      val map = mutable.Map[String,Any]("greeting" -> Some("Hola"))
       stringField.copy(new Object, map)
-      map.get("greeting") must be (None)
+      map.apply("greeting") must be (Some("Hola"))
     }
 
     it("must copy from one to multiple") {
@@ -105,18 +114,13 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
   }
 
   describe("copyAndUpdate") {
-    it("temporary: must have the new value and the original 'from' available for the updater to use") {
-      val integer = fieldWithSetterUsingContext.copyAndUpdate(Set(1,0,3), new AtomicInteger(30))
-      integer.get() must be (4)
-    }
-
     it("must have the new value and the original 'from' available for the updater to use") {
-      val integer = baseFieldWithSetterUsingContext.copyAndUpdate(Set(1,0,3), new AtomicInteger(30))
-      integer.get() must be (4)
+      val integer = baseFieldWithSetterUsingContext.copyAndUpdate(GetterInput(Set(1,0,3), UseDefaults), new AtomicInteger(30))
+      integer.get() must be (104)
     }
 
     it("must not fail if the updater isDefinedAt is false when using a PortableValue") {
-      val portableValue = baseFieldWithSetterUsingContext.copyFrom(Set(1,0,3))
+      val portableValue = baseFieldWithSetterUsingContext.copyFrom(GetterInput(Set(1,0,3), UseDefaults))
       val subject = new Object
       portableValue.update(subject) must be (subject)
     }
