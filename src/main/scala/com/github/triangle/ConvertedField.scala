@@ -2,7 +2,7 @@ package com.github.triangle
 
 /** A wrapping PortableField that converts between types. */
 abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDelegate[T] {
-  protected def delegate = field
+  protected val delegate = field
 
   def convert(value: F): Option[T]
 
@@ -16,7 +16,7 @@ abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDel
       field.updaterVal(input.withValue(unconvertedValue))
   }
 
-  override def toString = "converted(" + field + ")"
+  override lazy val toString = "converted(" + field + ")"
 }
 
 case class FormattedField[T](format: ValueFormat[T], field: PortableField[String]) extends ConvertedField[T,String](field) {
@@ -24,5 +24,5 @@ case class FormattedField[T](format: ValueFormat[T], field: PortableField[String
 
   def unconvert(value: T) = Some(format.toString(value))
 
-  override def toString = "formatted(" + format + ", " + field + ")"
+  override lazy val toString = "formatted(" + format + ", " + field + ")"
 }

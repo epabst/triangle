@@ -7,15 +7,20 @@ package com.github.triangle
  * Time: 10:50 PM
  */
 trait OriginToString {
-  private val packageNamesToExcludeForOriginToStringVal = packageNamesToExcludeForOriginToString
   protected def packageNamesToExcludeForOriginToString: Seq[String]
 
   private val origin: StackTraceElement = {
     val stackTrace = new Throwable().getStackTrace
-    stackTrace.dropWhile(e => packageNamesToExcludeForOriginToStringVal.exists(e.getClassName.startsWith(_))).headOption.getOrElse(stackTrace.last)
+    val notableElements = stackTrace.dropWhile { e =>
+      packageNamesToExcludeForOriginToString.exists { packageName =>
+        e.getClassName.startsWith(packageName)
+      }
+    }
+    notableElements.headOption.getOrElse(stackTrace.last)
   }
 
-  override def toString = super.toString + " [from " + origin + "]"
+  private lazy val toStringVal = super.toString + " [from " + origin + "]"
+  override def toString = toStringVal
 
   protected def withToString[A,B](string: String)(f: PartialFunction[A,B]): PartialFunction[A,B] = new PartialFunction[A,B] {
     def isDefinedAt(x: A) = f.isDefinedAt(x)

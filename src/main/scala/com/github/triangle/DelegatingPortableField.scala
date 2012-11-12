@@ -24,7 +24,7 @@ trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
   * This is important for creating extractors.
   */
 class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T] {
-  override def toString = delegate.toString
+  override lazy val toString = delegate.toString
 }
 
 /** A PortableField that delegates to another field that modifies part of the subject, as defined by {{{subjectGetter}}}. */

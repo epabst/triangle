@@ -8,7 +8,7 @@ abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: Class
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
-  val singleGetter = {
+  val singleGetter: PartialFunction[AnyRef,Option[T]] = {
     case subject if isExpectedType(subject) =>
       get(subject.asInstanceOf[S])
   }
@@ -58,6 +58,6 @@ object Getter {
     new TargetedGetter[S,T] {
       def get(subject: S) = body(subject)
 
-      override def toString = "getter[" + subjectManifest.erasure.getSimpleName + "]"
+      override val toString = "Getter[" + subjectManifest.erasure.getSimpleName + "]"
     }
 }

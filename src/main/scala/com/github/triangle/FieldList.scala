@@ -42,7 +42,7 @@ trait FieldList extends Traversable[BaseField] with BaseField with Logging {
 object FieldList {
   def apply(_fields: BaseField*): FieldList = toFieldList(_fields)
 
-  def apply(list: Traversable[BaseField]): FieldList = new FieldList { def fields = list }
+  def apply(list: Traversable[BaseField]): FieldList = new FieldList { val fields = list }
 
   implicit def toFieldList(list: Traversable[BaseField]): FieldList = FieldList(list)
 }

@@ -5,8 +5,9 @@ trait BaseField extends OriginToString {
   lazy val defaultValue: PortableValue = copyFrom(PortableField.UseDefaults)
 
   // For use with when the Logging trait is mixed-in
-  protected def logTag = "triangle"
+  protected val logTag = "triangle"
 
+  // Not a val because it is used in the constructing of the OriginToString superclass
   protected def packageNamesToExcludeForOriginToString = Seq(classOf[BaseField].getPackage.getName)
 
   /** Copies this field, the same as {{{copy(AnyRef,AnyRef)}}} except that

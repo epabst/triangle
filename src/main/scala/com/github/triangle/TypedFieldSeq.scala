@@ -9,7 +9,7 @@ package com.github.triangle
 case class TypedFieldSeq[T](fields: Vector[PortableField[T]]) extends PortableField[T] {
   private lazy val getters: Seq[PartialFunction[GetterInput, Option[T]]] = fields.map(field => field.getterVal)
 
-  def getter = {
+  def getter: PartialFunction[GetterInput,Option[T]] = {
     case items if getters.exists(_.isDefinedAt(items)) =>
       val definedGetters = getters.filter(_.isDefinedAt(items))
       val values = definedGetters.map { definedGetter =>
@@ -43,7 +43,7 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]]) extends PortableFi
   /**Adds two PortableField objects together. */
   override def +(other: PortableField[T]) = TypedFieldSeq(fields :+ other)
 
-  override def toString = fields.mkString(" + ")
+  override lazy val toString = fields.mkString(" + ")
 }
 
 object TypedFieldSeq {

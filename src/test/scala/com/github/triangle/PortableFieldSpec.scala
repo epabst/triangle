@@ -15,7 +15,7 @@ import scala.collection.immutable
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
   object LengthField extends SingleGetter[Int] {
-    def singleGetter = { case s: String => s.length }
+    val singleGetter: PartialFunction[AnyRef,Option[Int]] = { case s: String => s.length }
   }
 
   //required by contract spec
@@ -386,7 +386,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
   describe("&&") {
     it("must extract both values") {
       object FirstLetter extends SingleGetter[Char] {
-        def singleGetter = { case s: String => s.head }
+        val singleGetter: PartialFunction[AnyRef,Option[Char]] = { case s: String => s.head }
       }
       val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
       length must be (5)

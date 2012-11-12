@@ -183,10 +183,10 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 object PortableField {
   def emptyField[T]: PortableField[T] = new NoGetter[T] with NoUpdater[T]
 
-  private[triangle] def emptyPartialFunction[A,B] = new PartialFunction[A,B] {
-    def isDefinedAt(x: A) = false
+  private[triangle] val emptyPartialFunction: PartialFunction[Any,Nothing] = new PartialFunction[Any,Nothing] {
+    def isDefinedAt(x: Any) = false
 
-    def apply(v1: A) = throw new MatchError("emptyPartialFunction")
+    def apply(v1: Any) = throw new MatchError("emptyPartialFunction")
   }
 
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
@@ -196,7 +196,7 @@ object PortableField {
   def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) = new DelegatingPortableField[S] {
     val delegate = Getter[S,S](subject => Some(subject))
 
-    override def toString = "identifyField[" + subjectManifest.erasure.getSimpleName + "]"
+    override val toString = "identifyField[" + subjectManifest.erasure.getSimpleName + "]"
   }
 
   /** A common function for the second parameter such as <code>Setter[S,T](..., noSetterForEmpty)</code>. */
@@ -210,9 +210,9 @@ object PortableField {
 
   /** Defines a default for a field value, used when copied from UseDefaults. */
   def default[T](value: => T): PortableField[T] = new SingleGetter[T] {
-    def singleGetter = { case _: UseDefaults => Some(value) }
+    val singleGetter: PartialFunction[AnyRef,Option[T]] = { case _: UseDefaults => Some(value) }
 
-    override def toString = "default(" + value + ")"
+    override val toString = "default(" + value + ")"
   }
 
   /**
@@ -224,7 +224,7 @@ object PortableField {
       Updater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
       Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
 
-    override def toString = "mapField(" + key + ")"
+    override val toString = "mapField(" + key + ")"
   }
 
   /**
@@ -250,7 +250,7 @@ object PortableField {
     }) + Updater((m: Map[K,_ >: Option[T]]) => (valueOpt: Option[T]) => m + (key -> valueOpt)) +
       Setter((m: mutable.Map[K,_ >: Option[T]]) => (vOpt: Option[T]) => m.put(key, vOpt))
 
-    override def toString = "optionMapField(" + key + ")"
+    override val toString = "optionMapField(" + key + ")"
   }
 
   /**

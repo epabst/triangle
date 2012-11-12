@@ -35,7 +35,7 @@ object Updater {
 
       def subjectManifest = _subjectManifest
 
-      override def toString = "Updater[" + subjectManifest.erasure.getSimpleName + "]"
+      override val toString = "Updater[" + subjectManifest.erasure.getSimpleName + "]"
     }
 
   /**

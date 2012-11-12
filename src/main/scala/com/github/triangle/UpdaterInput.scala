@@ -20,5 +20,5 @@ object UpdaterInput {
   def apply[S <: AnyRef](subject: S, context: GetterInput): UpdaterInput[S,Nothing] =
     UpdaterInput(subject, undeterminedValue, context)
 
-  def undeterminedValue: Option[Nothing] = None
+  val undeterminedValue: Option[Nothing] = None
 }

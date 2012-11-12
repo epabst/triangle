@@ -30,7 +30,7 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
         integer.set(valueOpt.getOrElse(0) + integers.sum)
     }
 
-    override def toString = "fieldWithSetterUsingContext"
+    override val toString = "fieldWithSetterUsingContext"
   }
 
   val baseFieldWithSetterUsingContext = toBaseField(default(100) + fieldWithSetterUsingContext)

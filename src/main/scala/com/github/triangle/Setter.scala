@@ -40,13 +40,13 @@ object Setter {
   /** Defines setter field for a mutable type with Option as the value type. */
   def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): TargetedSetter[S,T] = {
     new TargetedSetter[S,T] {
-      def subjectManifest = _subjectManifest
+      val subjectManifest = _subjectManifest
 
       def set(subject: S, valueOpt: Option[T], context: GetterInput) {
         body(subject)(valueOpt)
       }
 
-      override def toString = "setter[" + subjectManifest.erasure.getSimpleName + "]"
+      override val toString = "setter[" + subjectManifest.erasure.getSimpleName + "]"
     }
   }
 

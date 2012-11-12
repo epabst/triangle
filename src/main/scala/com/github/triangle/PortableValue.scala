@@ -64,7 +64,7 @@ case class PortableValueSeq(portableValues: Traversable[PortableValue]) extends 
 
   def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption
 
-  override def toString = "PortableValue(" + portableValues.mkString(",") + ")"
+  override lazy val toString = "PortableValue(" + portableValues.mkString(",") + ")"
 }
 
 object PortableValue {

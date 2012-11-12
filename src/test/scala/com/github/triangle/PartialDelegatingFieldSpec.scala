@@ -15,18 +15,18 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
   //required by contract spec
   def toBaseField[T](field: PortableField[T]) = new PartialDelegatingField[T] {
     // used for deepCollect
-    protected def delegate = field
+    protected val delegate = field
 
-    protected def subjectGetter = {
+    protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
       case ref => ref
     }
   }
 
   it("must unwrap the AnyRef for getter") {
     val field = new PartialDelegatingField[Int] {
-      protected def delegate = PortableField.default(5)
+      protected val delegate = PortableField.default(5)
 
-      protected def subjectGetter = {
+      protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
         case AnyRefHolder(ref) => ref
       }
     }
@@ -36,9 +36,9 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
 
   it("must unwrap the AnyRef for setter") {
     val field = new PartialDelegatingField[Int] {
-      protected def delegate = PortableField.mapField[Int]("count")
+      protected val delegate = PortableField.mapField[Int]("count")
 
-      protected def subjectGetter = {
+      protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
         case AnyRefHolder(ref) => ref
       }
     }
@@ -49,9 +49,9 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
 
   it("must unwrap the AnyRef for updater (using setter)") {
     val field = new PartialDelegatingField[Int] {
-      protected def delegate = PortableField.mapField[Int]("count")
+      protected val delegate = PortableField.mapField[Int]("count")
 
-      protected def subjectGetter = {
+      protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
         case AnyRefHolder(ref) => ref
       }
     }
@@ -64,7 +64,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
     val field = new PartialDelegatingField[String] {
       protected def delegate = fieldWithGetterFromItem
 
-      protected def subjectGetter = {
+      protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
         case AnyRefHolder(ref) => ref
       }
     }
@@ -75,7 +75,7 @@ class PartialDelegatingFieldSpec extends BaseFieldContractSpec {
     val field = new PartialDelegatingField[Int] {
       protected def delegate = fieldWithSetterUsingContext
 
-      protected def subjectGetter = {
+      protected val subjectGetter: PartialFunction[AnyRef,AnyRef] = {
         case AnyRefHolder(ref) => ref
       }
     }

@@ -44,7 +44,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
   /** Converts the FieldTuple to a Getter PortableField that accepts a composite type T and a combiner function. */
   def asGetter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
     new Getter[T] with TupleField[T] {
-      def getter = {
+      def getter: PartialFunction[GetterInput,Option[T]] = {
         case input if productIterator.forall(_.getterVal.isDefinedAt(input)) => combiner(valuesTuple(input))
       }
     }
@@ -65,6 +65,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
     case _ => false
   }
 
+  // Not a val because it is used in the constructing of the OriginToString superclass
   protected def packageNamesToExcludeForOriginToString = Seq(classOf[FieldTuple].getPackage.getName)
 }
 
@@ -106,7 +107,7 @@ case class FieldTuple2[F1,F2](_1: PortableField[F1], _2: PortableField[F2])
         extends FieldTuple with Product2[PortableField[F1],PortableField[F2]] {
   type ValuesTuple = (Option[F1], Option[F2])
 
-  def emptyValuesTuple = (None, None)
+  val emptyValuesTuple = (None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items))
 
@@ -120,7 +121,7 @@ case class FieldTuple3[F1,F2,F3](_1: PortableField[F1], _2: PortableField[F2], _
         extends FieldTuple with Product3[PortableField[F1],PortableField[F2],PortableField[F3]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3])
 
-  def emptyValuesTuple = (None, None, None)
+  val emptyValuesTuple = (None, None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items))
 
@@ -136,7 +137,7 @@ case class FieldTuple4[F1,F2,F3,F4](_1: PortableField[F1], _2: PortableField[F2]
         extends FieldTuple with Product4[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4])
 
-  def emptyValuesTuple = (None, None, None, None)
+  val emptyValuesTuple = (None, None, None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
           _4.getterVal(items))
@@ -154,7 +155,7 @@ case class FieldTuple5[F1,F2,F3,F4,F5](_1: PortableField[F1], _2: PortableField[
         extends FieldTuple with Product5[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5])
 
-  def emptyValuesTuple = (None, None, None, None, None)
+  val emptyValuesTuple = (None, None, None, None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
           _4.getterVal(items), _5.getterVal(items))
@@ -173,7 +174,7 @@ case class FieldTuple6[F1,F2,F3,F4,F5,F6](_1: PortableField[F1], _2: PortableFie
         extends FieldTuple with Product6[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5],PortableField[F6]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5], Option[F6])
 
-  def emptyValuesTuple = (None, None, None, None, None, None)
+  val emptyValuesTuple = (None, None, None, None, None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getterVal(items), _2.getterVal(items), _3.getterVal(items),
           _4.getterVal(items), _5.getterVal(items), _6.getter(items))
@@ -194,7 +195,7 @@ case class FieldTuple7[F1,F2,F3,F4,F5,F6,F7](_1: PortableField[F1], _2: Portable
         extends FieldTuple with Product7[PortableField[F1],PortableField[F2],PortableField[F3],PortableField[F4],PortableField[F5],PortableField[F6],PortableField[F7]] {
   type ValuesTuple = (Option[F1], Option[F2], Option[F3], Option[F4], Option[F5], Option[F6], Option[F7])
 
-  def emptyValuesTuple = (None, None, None, None, None, None, None)
+  val emptyValuesTuple = (None, None, None, None, None, None, None)
 
   def valuesTuple(items: GetterInput) = (_1.getter(items), _2.getter(items), _3.getter(items),
           _4.getter(items), _5.getter(items), _6.getter(items), _7.getter(items))
