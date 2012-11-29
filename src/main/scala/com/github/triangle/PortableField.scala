@@ -48,9 +48,14 @@ trait PortableField[T] extends BaseField with Logging { self =>
    * @throws MatchError if this field is undefined for the given AnyRef
    */
   def getValue(input: GetterInput): Option[T] = {
-    val result = getterVal(input)
-    require(result != null, this + "'s getter is non-functional.  It should never return a null.")
-    result
+    try {
+      val result = getterVal(input)
+      require(result != null, this + "'s getter is non-functional.  It should never return a null.")
+      result
+    } catch {
+      case matchError: MatchError =>
+        throw new IllegalArgumentException("No getters are defined for input=" + input + " for field=" + this, matchError)
+    }
   }
 
   /**
