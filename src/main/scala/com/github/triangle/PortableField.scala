@@ -220,6 +220,13 @@ object PortableField {
     override val toString = "default(" + value + ")"
   }
 
+  def defaultToNone[T]: PortableField[T] = new SingleGetter[T] {
+    /** PartialFunction for getting an optional value from an AnyRef. */
+    val singleGetter: PartialFunction[AnyRef,Option[T]] = { case _: UseDefaults => None }
+
+    override val toString = "defaultToNone"
+  }
+
   /**
    * A PortableField that works with Scala Maps that considers all Maps as applicable and the values are direct (not of type Option).
    * @see [[com.github.triangle.PortableField.optionMapFieldWithKey]]
