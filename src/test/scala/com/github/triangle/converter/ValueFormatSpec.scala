@@ -1,14 +1,13 @@
-package com.github.triangle
+package com.github.triangle.converter
 
+import ValueFormat._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.FunSpec
-import java.text.NumberFormat
-import ValueFormat._
 import java.util.{Calendar, GregorianCalendar}
 
-/** A behavior specification for [[com.github.triangle.ValueFormat]].
+/** A behavior specification for [[com.github.triangle.converter.ValueFormat]].
   * @author Eric Pabst (epabst@gmail.com)
   */
 

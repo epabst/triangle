@@ -1,6 +1,7 @@
 package com.github.triangle
 
 import collection.mutable
+import converter.{Converter,ValueFormat}
 
 /** A portable field of a specific type which applies to Cursors, Views, Model objects, etc.
   * Example:

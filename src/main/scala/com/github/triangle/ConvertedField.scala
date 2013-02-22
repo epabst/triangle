@@ -1,5 +1,7 @@
 package com.github.triangle
 
+import converter.ValueFormat
+
 /** A wrapping PortableField that converts between types. */
 abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDelegate[T] {
   protected val delegate = field

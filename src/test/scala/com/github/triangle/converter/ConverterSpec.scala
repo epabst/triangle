@@ -1,4 +1,4 @@
-package com.github.triangle
+package com.github.triangle.converter
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -9,7 +9,7 @@ import GenericConverter._
 import java.util.{Calendar, GregorianCalendar, Date}
 import java.text.DateFormat
 
-/** A behavior specification for [[com.github.triangle.Converter]].
+/** A behavior specification for [[com.github.triangle.converter.Converter]].
   * @author Eric Pabst (epabst@gmail.com)
   */
 

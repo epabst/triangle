@@ -1,29 +1,17 @@
-package com.github.triangle
+package com.github.triangle.converter
 
-import java.text.{DateFormat, Format, ParsePosition, NumberFormat}
+import java.text.{DateFormat, Format, NumberFormat}
 import java.util.{Calendar, Date}
 
+/**
+ * A converter from one type to another.
+ * @author Eric Pabst (epabst@gmail.com)
+ *         Date: 2/22/13
+ *         Time: 7:44 AM
+ */
 trait Converter[-A,+B] {
   /** Converts from {{{from}}} to the new type if possible. */
   def convert(from: A): Option[B]
-}
-
-abstract class SimpleConverter[-A,+B] extends Converter[A,B] {
-  protected def attemptConvert(from: A): B
-
-  def convert(from: A) = try { Some(attemptConvert(from)) } catch { case e: IllegalArgumentException => None }
-}
-
-class ParseFormatConverter[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}) extends Converter[String,T] {
-  def convert(string: String) = {
-    val position = new ParsePosition(0)
-    val result = format.parseObject(string, position)
-    if (position.getIndex == 0) None else Some(obj2Value(result))
-  }
-}
-
-class CompositeDirectConverter[-A,+B](converters: List[Converter[A,B]]) extends Converter[A,B] {
-  def convert(from: A) = converters.view.flatMap(_.convert(from)).headOption
 }
 
 object Converter {

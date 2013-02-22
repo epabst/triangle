@@ -1,11 +1,12 @@
 package com.github.triangle
 
+import converter.ValueFormat
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import PortableField._
 import org.scalatest.mock.EasyMockSugar
 import collection.mutable
-import Converter._
+import converter.Converter._
 import scala.collection.immutable
 
 /** A behavior specification for [[com.github.triangle.PortableField]].

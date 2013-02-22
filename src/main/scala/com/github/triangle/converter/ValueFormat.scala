@@ -1,4 +1,4 @@
-package com.github.triangle
+package com.github.triangle.converter
 
 import java.util.{Calendar, Date}
 import scala.Enumeration
@@ -14,21 +14,6 @@ trait ValueFormat[T] {
 
   /** May need to be overridden */
   def toString(value: T): String = value.toString
-}
-
-class ConvertingValueFormat[T](toValueConverter: Converter[String,T],
-                               toStringConverter: Converter[T,String] = anyToString) extends ValueFormat[T] {
-  def toValue(s: String) = toValueConverter.convert(s)
-
-  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
-}
-
-class GenericConvertingValueFormat[T](toValueConverter: GenericConverter[String,T],
-                                      toStringConverter: Converter[T, String] = anyToString)(implicit manifest: Manifest[T])
-        extends ValueFormat[T] {
-  def toValue(s: String) = toValueConverter.convertTo[T](s)
-
-  override def toString(value: T) = toStringConverter.convert(value).getOrElse(throw new IllegalArgumentException(String.valueOf(value)))
 }
 
 object ValueFormat {
