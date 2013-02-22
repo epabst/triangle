@@ -15,6 +15,14 @@ import java.text.DateFormat
 
 @RunWith(classOf[JUnitRunner])
 class ConverterSpec extends FunSpec with MustMatchers {
+  describe("identityConverter") {
+    it("must be equal, regardless of its type") {
+      val converter1 = identityConverter[String]
+      val converter2 = identityConverter[Date]
+      converter1 must be (converter2)
+    }
+  }
+
   describe("anyToString") {
     it("must use the Object.toString method") {
       val from = new Object

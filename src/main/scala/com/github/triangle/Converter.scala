@@ -27,6 +27,16 @@ class CompositeDirectConverter[-A,+B](converters: List[Converter[A,B]]) extends 
 }
 
 object Converter {
+  /**
+   * This is a polymorphic singleton where a single instance is used to implement any number of types.
+   * This is so that it can be used to identify when a Converter isn't doing anything and may be bypassed.
+   */
+  def identityConverter[A]: Converter[A,A] = _identityConverter.asInstanceOf[Converter[A,A]]
+
+  private val _identityConverter = new Converter[Any,Any] {
+    def convert(from: Any) = Some(from)
+  }
+
   implicit def apply[A,B](f: A => Option[B]): Converter[A,B] = new Converter[A,B] {
     def convert(from: A) = f(from)
   }
