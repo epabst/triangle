@@ -22,7 +22,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
   //this is only here to help the IDE to infer the type concretely
   override def productIterator: Iterator[PortableField[_]] = super.productIterator.asInstanceOf[Iterator[PortableField[_]]]
 
-  trait TupleField[T] extends PortableField[T] { selfField =>
+  abstract class TupleField[T] extends PortableField[T] { selfField =>
     /** Allows chaining such as {{{FieldTuple(...).asGetter(...).withUpdater(...)}}}. */
     def withUpdater(splitter: T => ValuesTuple): PortableField[T] = {
       val updaterField = FieldTuple.this.asUpdater(splitter)
@@ -43,7 +43,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
 
   /** Converts the FieldTuple to a Getter PortableField that accepts a composite type T and a combiner function. */
   def asGetter[T](combiner: ValuesTuple => Option[T]): TupleField[T] = {
-    new Getter[T] with TupleField[T] {
+    new TupleField[T] with Getter[T] {
       def getter: PartialFunction[GetterInput,Option[T]] = {
         case input if productIterator.forall(_.getterVal.isDefinedAt(input)) => combiner(valuesTuple(input))
       }
@@ -52,7 +52,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
 
   /** Creates a PortableField with an Updater that accepts a composite type T and a splitter function. */
   def asUpdater[T](splitter: T => ValuesTuple): TupleField[T] = {
-    new Updater[T] with TupleField[T] {
+    new TupleField[T] with Updater[T] {
       def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
         case input @ UpdaterInput(subject, valueOpt, _) if productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue)) =>
           updateWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))

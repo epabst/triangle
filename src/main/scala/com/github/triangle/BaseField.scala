@@ -1,7 +1,7 @@
 package com.github.triangle
 
 /** A trait for a typeless [[com.github.triangle.PortableField]] for convenience such as when defining a List of heterogeneous Fields. */
-trait BaseField extends OriginToString {
+abstract class BaseField extends OriginToString {
   lazy val defaultValue: PortableValue = copyFrom(PortableField.UseDefaults)
 
   // For use with when the Logging trait is mixed-in

@@ -9,7 +9,7 @@ trait NoUpdater[T] extends PortableField[T] {
 trait Updater[T] extends NoGetter[T]
 
 /** An Updater that only applies if the subject is a given type. */
-trait TargetedUpdater[S <: AnyRef, T] extends Updater[T] with TargetedField[S, T]
+trait TargetedUpdater[S <: AnyRef, T] extends TargetedField[S, T] with Updater[T]
 
 object Updater {
   /** Factory method that takes the body of the updater as a parameter. */

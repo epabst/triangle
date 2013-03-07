@@ -7,7 +7,7 @@ import scala.collection._
   * It implements BaseField in order to use copy methods that return a PortableValue which represents a composite value.
   * @author Eric Pabst (epabst@gmail.com)
   */
-trait FieldList extends Traversable[BaseField] with BaseField with Logging {
+abstract class FieldList extends BaseField with Traversable[BaseField] with Logging {
 
   protected def fields: Traversable[BaseField]
 

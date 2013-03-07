@@ -22,7 +22,7 @@ import converter.{Converter,ValueFormat}
   * @see #getter
   * @see #setter
   */
-trait PortableField[T] extends BaseField with Logging { self =>
+abstract class PortableField[T] extends BaseField with Logging { self =>
   def ->(value: Option[T]): PortableValue1[T] = new PortableValue1[T](this, value)
 
   def ->(value: T): PortableValue1[T] = ->(Some(value))
@@ -187,7 +187,7 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
 object PortableField {
-  def emptyField[T]: PortableField[T] = new NoGetter[T] with NoUpdater[T]
+  def emptyField[T]: PortableField[T] = new PortableField[T] with NoGetter[T] with NoUpdater[T]
 
   private[triangle] val emptyPartialFunction: PartialFunction[Any,Nothing] = new PartialFunction[Any,Nothing] {
     def isDefinedAt(x: Any) = false

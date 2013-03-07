@@ -12,7 +12,7 @@ trait FieldWithDelegate[T] extends PortableField[T] {
 }
 
 /** A FieldWithDelegate that delegates directly to its delegate field. */
-trait DelegatingPortableField[T] extends FieldWithDelegate[T] {
+abstract class DelegatingPortableField[T] extends FieldWithDelegate[T] {
   protected def delegate: PortableField[T]
 
   override def getter = delegate.getterVal

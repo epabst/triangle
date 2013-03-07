@@ -10,13 +10,13 @@ trait UpdaterUsingSetter[T] extends PortableField[T] {
   }
 }
 
-trait Setter[T] extends NoGetter[T] with UpdaterUsingSetter[T]
+trait Setter[T] extends UpdaterUsingSetter[T] with NoGetter[T]
 
 /** [[com.github.triangle.PortableField]] support for setting a value if {{{subject}}} is of type S.
   * This is a trait so that it can be mixed with TargetedGetter.
   * S is the Writable type to put the value into
   */
-trait TargetedSetter[S <: AnyRef,T] extends Setter[T] with TargetedField[S,T] with Logging {
+abstract class TargetedSetter[S <: AnyRef,T] extends PortableField[T] with TargetedField[S,T] with Setter[T] with Logging {
   def subjectManifest: ClassManifest[S]
 
   /** An abstract method that must be implemented by subtypes. */
