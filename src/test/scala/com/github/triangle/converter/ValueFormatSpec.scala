@@ -87,8 +87,8 @@ class ValueFormatSpec extends FunSpec with MustMatchers {
     }
 
     it("must format correctly") {
-      format.toString(1234.2) must be ("$1,234.20")
-      format.toString(1234.22324) must be ("$1,234.22")
+      format.toString(1234.2) must be ("1,234.20")
+      format.toString(1234.22324) must be ("1,234.22")
     }
   }
 

@@ -37,16 +37,25 @@ object Converter {
     def convert(from: Any) = None
   }
 
-  private lazy val currencyFormat = NumberFormat.getCurrencyInstance
+  private lazy val defaultCurrencyFormat = NumberFormat.getCurrencyInstance
+
+  private lazy val currencyFormat = {
+    val format = NumberFormat.getNumberInstance
+    format.setMinimumFractionDigits(defaultCurrencyFormat.getMinimumFractionDigits)
+    format.setMaximumFractionDigits(defaultCurrencyFormat.getMaximumFractionDigits)
+    format.setGroupingUsed(defaultCurrencyFormat.isGroupingUsed)
+    format.setGroupingUsed(defaultCurrencyFormat.isGroupingUsed)
+    format
+  }
   private lazy val currencyEditFormat = {
     val editFormat = NumberFormat.getNumberInstance
-    editFormat.setMinimumFractionDigits(currencyFormat.getMinimumFractionDigits)
-    editFormat.setMaximumFractionDigits(currencyFormat.getMaximumFractionDigits)
+    editFormat.setMinimumFractionDigits(defaultCurrencyFormat.getMinimumFractionDigits)
+    editFormat.setMaximumFractionDigits(defaultCurrencyFormat.getMaximumFractionDigits)
     editFormat
   }
 
   val stringToCurrency: Converter[String,Double] = new CompositeDirectConverter[String,Double](
-    List(currencyEditFormat, currencyFormat, NumberFormat.getNumberInstance).map(
+    List(currencyEditFormat, currencyFormat, NumberFormat.getNumberInstance, defaultCurrencyFormat).map(
       new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
   )
 

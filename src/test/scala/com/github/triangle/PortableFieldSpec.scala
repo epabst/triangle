@@ -255,8 +255,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
       it("must have a working updater") {
         val field = converted(currencyToString, mapField[String]("amountString"), stringToCurrency)
         //qualified to point out that it's immutable
-        val result: Map[String,Double] = field.updater(UpdaterInput(immutable.Map.empty[String,Double], 4.0))
-        result.get("amountString") must be (Some("$4.00"))
+        val result: Map[String,Double] = field.updater(UpdaterInput(immutable.Map.empty[String,Double], -4.0))
+        result.get("amountString") must be (Some("-4.00"))
       }
     }
 

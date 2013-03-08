@@ -119,8 +119,8 @@ class ConverterSpec extends FunSpec with MustMatchers {
 
   describe("currencyToString") {
     it("must format correctly") {
-      currencyToString.convert(1234.2) must be (Some("$1,234.20"))
-      currencyToString.convert(1234.22324) must be (Some("$1,234.22"))
+      currencyToString.convert(1234.2) must be (Some("1,234.20"))
+      currencyToString.convert(1234.22324) must be (Some("1,234.22"))
     }
   }
 
