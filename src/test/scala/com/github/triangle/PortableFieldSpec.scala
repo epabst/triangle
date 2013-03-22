@@ -4,7 +4,8 @@ import converter.ValueFormat
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import PortableField._
-import org.scalatest.mock.EasyMockSugar
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
 import collection.mutable
 import converter.Converter._
 import scala.collection.immutable
@@ -14,7 +15,7 @@ import scala.collection.immutable
   */
 
 @RunWith(classOf[JUnitRunner])
-class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
+class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
   object LengthField extends SingleGetter[Int] {
     val singleGetter: PartialFunction[AnyRef,Option[Int]] = { case s: String => s.length }
   }
@@ -333,16 +334,10 @@ class PortableFieldSpec extends BaseFieldContractSpec with EasyMockSugar {
 
     describe("+") {
       it("must use getterForItem on each Field added together") {
-        val mockField = mock[PortableField[String]]
-        val field = mapField[String]("foo") + mockField
-        expecting {
-          call(mockField.getterVal).andReturn({
-            case GetterInput(List(PortableField.UseDefaults, "String")) => Some("success")
-          }).anyTimes
+        val field = mapField[String]("foo") + Getter[String] {
+          case GetterInput(List(PortableField.UseDefaults, "String")) => Some("success")
         }
-        whenExecuting(mockField) {
-          field.getterVal(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
-        }
+        field.getterVal(GetterInput(PortableField.UseDefaults, "String")) must be (Some("success"))
       }
     }
 
