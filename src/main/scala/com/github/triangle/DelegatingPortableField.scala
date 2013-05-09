@@ -12,6 +12,7 @@ trait FieldWithDelegate[T] extends PortableField[T] {
 }
 
 /** A FieldWithDelegate that delegates directly to its delegate field. */
+@deprecated("use Field")
 abstract class DelegatingPortableField[T] extends FieldWithDelegate[T] {
   protected def delegate: PortableField[T]
 
@@ -20,10 +21,12 @@ abstract class DelegatingPortableField[T] extends FieldWithDelegate[T] {
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updaterVal
 }
 
-/** a PortableField[T] that wraps another for use with creating field objects.
-  * This is important for creating extractors.
-  */
-class Field[T](val delegate: PortableField[T]) extends DelegatingPortableField[T] {
+/**
+ * a PortableField[T] that wraps another.
+ * This is important for creating Field objects or extractors and is also
+ * useful when wanting subclasses with additional fields or behavior.
+ */
+class Field[T](val delegate: PortableField[T]) extends SimplePortableField[T](delegate.getter, delegate.updater) with FieldWithDelegate[T] {
   override lazy val toString = delegate.toString
 }
 

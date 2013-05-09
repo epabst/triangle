@@ -6,30 +6,28 @@ package com.github.triangle
  *         Date: 8/25/12
  *         Time: 1:02 PM
  */
-case class TypedFieldSeq[T](fields: Vector[PortableField[T]]) extends PortableField[T] {
-  private lazy val getters: Seq[PartialFunction[GetterInput, Option[T]]] = fields.map(field => field.getterVal)
-
-  def getter: PartialFunction[GetterInput,Option[T]] = {
-    case items if getters.exists(_.isDefinedAt(items)) =>
-      val definedGetters = getters.filter(_.isDefinedAt(items))
-      val values = definedGetters.map { definedGetter =>
-        val value = definedGetter.apply(items)
-        require(value != null, definedGetter + " is non-functional.  It should never return a null.")
-        value
+case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
+    extends SimplePortableField[T]({
+      val getters = fields.map(field => field.getterVal)
+      SimplePortableField.asGetterFunction {
+        case items if getters.exists(_.isDefinedAt(items)) =>
+          val definedGetters = getters.filter(_.isDefinedAt(items))
+          val values = definedGetters.map { definedGetter =>
+            val value = definedGetter.apply(items)
+            require(value != null, definedGetter + " is non-functional.  It should never return a null.")
+            value
+          }
+          values.find(_.isDefined).getOrElse(None)
       }
-      values.find(_.isDefined).getOrElse(None)
-  }
-
-  /** Combines the two updaters, calling only applicable ones (not just the first though). */
-  def updater[S <: AnyRef] = {
-    val updaters = fields.map(_.updaterVal[S])
-    val _updater: PartialFunction[UpdaterInput[S,T],S] = {
-      case input @ UpdaterInput(subject, valueOpt, context) if updaters.exists(_.isDefinedAt(input)) =>
-        val definedUpdaters = updaters.filter(_.isDefinedAt(input))
-        definedUpdaters.foldLeft(subject)((subject, updater) => updater.apply(input.copy(subject = subject)))
-    }
-    _updater
-  }
+    }, {
+      /** Combines the two updaters, calling only applicable ones (not just the first though). */
+      val updaters = fields.map(_.updaterVal[AnyRef])
+      SimplePortableField.asUpdaterFunction {
+        case input @ UpdaterInput(subject, valueOpt, context) if updaters.exists(_.isDefinedAt(input)) =>
+          val definedUpdaters = updaters.filter(_.isDefinedAt(input))
+          definedUpdaters.foldLeft(subject)((subject: AnyRef, updater) => updater.apply(input.copy(subject = subject)))
+      }
+    }) {
 
   override def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = {
     super.deepCollect[R](f) match {

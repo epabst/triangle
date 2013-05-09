@@ -131,7 +131,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
-  private final lazy val _updaterVal: PartialFunction[UpdaterInput[Nothing,T],Nothing] = withToString("updater of " + this)(updater)
+  private final lazy val _updaterVal: PartialFunction[UpdaterInput[AnyRef,T],AnyRef] = withToString("updater of " + this)(updater)
   /** The same as updater, but it is only evaluated once and its toString method is set. */
   final def updaterVal[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] =
     _updaterVal.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
@@ -199,11 +199,10 @@ object PortableField {
   implicit def toSome[T](value: T): Option[T] = Some(value)
 
   /** Defines a read-only field for returning the subject item itself (as an Option). */
-  def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) = new DelegatingPortableField[S] {
-    val delegate = Getter[S,S](subject => Some(subject))
-
-    override val toString = "identifyField[" + subjectManifest.erasure.getSimpleName + "]"
-  }
+  def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) =
+    new Field[S](Getter[S,S](subject => Some(subject))) {
+      override lazy val toString = "identifyField[" + subjectManifest.erasure.getSimpleName + "]"
+    }
 
   /** A common function for the second parameter such as <code>Setter[S,T](..., noSetterForEmpty)</code>. */
   def noSetterForEmpty[S]: S => Unit = {_: S => }
@@ -232,12 +231,12 @@ object PortableField {
    * A PortableField that works with Scala Maps that considers all Maps as applicable and the values are direct (not of type Option).
    * @see [[com.github.triangle.PortableField.optionMapFieldWithKey]]
    */
-  def mapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
-    val delegate = Getter[collection.Map[K,_ <: T],T](_.get(key)) +
-      Updater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
-      Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))
+  def mapFieldWithKey[T,K](key: K): PortableField[T] =
+    new Field[T](Getter[collection.Map[K,_ <: T],T](_.get(key)) +
+        Updater((m: Map[K,_ >: T]) => (value: T) => m + (key -> value), (m: Map[K,_ >: T]) => m - key) +
+        Setter((m: mutable.Map[K,_ >: T]) => (v: T) => m.put(key, v), (m: mutable.Map[K,_ >: T]) => m.remove(key))) {
 
-    override val toString = "mapField(" + key + ")"
+    override lazy val toString = "mapField(" + key + ")"
   }
 
   /**
@@ -256,14 +255,13 @@ object PortableField {
    * if it contains the key, and whose values are of type Option.
    * This is helpful to avoid overwriting values when copying to some other subject.
    */
-  def optionMapFieldWithKey[T,K](key: K): PortableField[T] = new DelegatingPortableField[T] {
-    val delegate = Getter.single[T]({
+  def optionMapFieldWithKey[T,K](key: K): PortableField[T] = new Field[T](
+    Getter.single[T]({
       case map: collection.Map[K, _] if hasValueThatIsAnOption(map, key) =>
         map.apply(key).asInstanceOf[Option[T]]
     }) + Updater((m: Map[K,_ >: Option[T]]) => (valueOpt: Option[T]) => m + (key -> valueOpt)) +
-      Setter((m: mutable.Map[K,_ >: Option[T]]) => (vOpt: Option[T]) => m.put(key, vOpt))
-
-    override val toString = "optionMapField(" + key + ")"
+        Setter((m: mutable.Map[K,_ >: Option[T]]) => (vOpt: Option[T]) => m.put(key, vOpt))) {
+    override lazy val toString = "optionMapField(" + key + ")"
   }
 
   /**
