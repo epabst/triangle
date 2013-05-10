@@ -3,28 +3,17 @@ package com.github.triangle
 import converter.ValueFormat
 
 /** A wrapping PortableField that converts between types. */
-abstract class ConvertedField[T,F](field: PortableField[F]) extends FieldWithDelegate[T] {
-  protected val delegate = field
-
-  def convert(value: F): Option[T]
-
-  def unconvert(value: T): Option[F]
-
-  def getter = field.getterVal.andThen(value => value.flatMap(convert(_)))
-
-  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case input @ UpdaterInput(subject, valueOpt, context) if field.updaterVal.isDefinedAt(input.withUndeterminedValue) =>
-      val unconvertedValue: Option[F] = valueOpt.flatMap(unconvert(_))
-      field.updaterVal(input.withValue(unconvertedValue))
-  }
-
-  override lazy val toString = "converted(" + field + ")"
+class ConvertedField[T,F](val delegate: PortableField[F], val converter: F => Option[T], val unconverter: T => Option[F])
+    extends SimplePortableField[T](delegate.getterVal.andThen(value => value.flatMap(converter(_))),
+      _updater = {
+        case input @ UpdaterInput(subject, valueOpt, context) if delegate.updaterVal.isDefinedAt(input.withUndeterminedValue) =>
+          val unconvertedValue: Option[F] = valueOpt.flatMap(unconverter(_))
+          delegate.updaterVal(input.withValue(unconvertedValue))
+      }) with FieldWithDelegate[T] {
+  override lazy val toString = "converted(" + delegate + ")"
 }
 
-case class FormattedField[T](format: ValueFormat[T], field: PortableField[String]) extends ConvertedField[T,String](field) {
-  def convert(string: String) = format.toValue(string)
-
-  def unconvert(value: T) = Some(format.toString(value))
-
+case class FormattedField[T](format: ValueFormat[T], field: PortableField[String])
+    extends ConvertedField[T,String](field, format.toValue, v => Some(format.toString(v))) {
   override lazy val toString = "formatted(" + format + ", " + field + ")"
 }

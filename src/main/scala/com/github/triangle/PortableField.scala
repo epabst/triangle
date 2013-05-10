@@ -280,11 +280,7 @@ object PortableField {
     default[Unit](Unit) + Updater((s: S) => (u: Option[Unit]) => adjuster(s))
 
   def converted[A,B](converter1: Converter[A,B], field: PortableField[B], converter2: Converter[B,A]): PortableField[A] =
-    new ConvertedField[A,B](field) {
-      def convert(value: B) = converter2.convert(value)
-
-      def unconvert(value: A) = converter1.convert(value)
-    }
+    new ConvertedField[A,B](field, converter2.convert, converter1.convert)
 
   def formatted[T](format: ValueFormat[T], field: PortableField[String]) = new FormattedField(format, field)
 
