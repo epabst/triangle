@@ -3,22 +3,12 @@ package com.github.triangle
 import scala.PartialFunction
 
 /** Any PortableField that contains another PortableField should extend this.
-  * @see DelegatingPortableField
+  * @see Field
   */
 trait FieldWithDelegate[T] extends PortableField[T] {
   protected def delegate: BaseField
 
   override def deepCollect[R](f: PartialFunction[BaseField, R]) = f.lift(this).map(List(_)).getOrElse(delegate.deepCollect(f))
-}
-
-/** A FieldWithDelegate that delegates directly to its delegate field. */
-@deprecated("use Field")
-abstract class DelegatingPortableField[T] extends FieldWithDelegate[T] {
-  protected def delegate: PortableField[T]
-
-  override def getter = delegate.getterVal
-
-  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = delegate.updaterVal
 }
 
 /**
