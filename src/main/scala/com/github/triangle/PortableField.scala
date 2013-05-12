@@ -187,7 +187,7 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
 object PortableField {
-  def emptyField[T]: PortableField[T] = new PortableField[T] with NoGetter[T] with NoUpdater[T]
+  def emptyField[T]: PortableField[T] = new SimplePortableField[T](emptyPartialFunction, emptyPartialFunction)
 
   private[triangle] val emptyPartialFunction: PartialFunction[Any,Nothing] = new PartialFunction[Any,Nothing] {
     def isDefinedAt(x: Any) = false
@@ -214,16 +214,11 @@ object PortableField {
   val UseDefaults: AnyRef = new UseDefaults
 
   /** Defines a default for a field value, used when copied from UseDefaults. */
-  def default[T](value: => T): PortableField[T] = new SingleGetter[T] {
-    val singleGetter: PartialFunction[AnyRef,Option[T]] = { case _: UseDefaults => Some(value) }
-
+  def default[T](value: => T): PortableField[T] = new SingleGetter[T]({ case _: UseDefaults => Some(value) }) {
     override val toString = "default(" + value + ")"
   }
 
-  def defaultToNone[T]: PortableField[T] = new SingleGetter[T] {
-    /** PartialFunction for getting an optional value from an AnyRef. */
-    val singleGetter: PartialFunction[AnyRef,Option[T]] = { case _: UseDefaults => None }
-
+  def defaultToNone[T]: PortableField[T] = new SingleGetter[T]({ case _: UseDefaults => None }) {
     override val toString = "defaultToNone"
   }
 

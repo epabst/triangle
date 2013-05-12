@@ -22,14 +22,10 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
     case StringIdentityField(Some(string)) && IntSetIdentityField(Some(set)) => Some(string + set.sum)
   }
 
-  val fieldWithSetterUsingContext = new UpdaterUsingSetter[Int] with NoGetter[Int] {
-
-    /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,Int],Unit] = {
-      case UpdaterInput(integer: AtomicInteger, valueOpt, IntSetIdentityField(Some(integers))) =>
-        integer.set(valueOpt.getOrElse(0) + integers.sum)
-    }
-
+  val fieldWithSetterUsingContext = new Setter[Int]({
+    case UpdaterInput(integer: AtomicInteger, valueOpt, IntSetIdentityField(Some(integers))) =>
+      integer.set(valueOpt.getOrElse(0) + integers.sum)
+  }) {
     override val toString = "fieldWithSetterUsingContext"
   }
 

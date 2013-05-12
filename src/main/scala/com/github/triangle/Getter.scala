@@ -4,7 +4,7 @@ package com.github.triangle
   * T is the value type.
   * S is the the Readable type to get the value out of.
   */
-abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends TargetedField[S,T] with SingleGetter[T] with Logging {
+abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: ClassManifest[S]) extends TargetedField[S,T] with Getter[T] with Logging {
   /** An abstract method that must be implemented by subtypes. */
   def get(subject: S): Option[T]
 
@@ -17,17 +17,6 @@ abstract class TargetedGetter[S <: AnyRef,T](implicit val subjectManifest: Class
     val result = subjectManifest.erasure.isInstance(subject)
     result
   }
-}
-
-trait NoGetter[T] extends PortableField[T] {
-  def getter = PortableField.emptyPartialFunction
-}
-
-trait Getter[T] extends NoUpdater[T]
-
-trait SingleGetter[T] extends Getter[T] {
-  /** PartialFunction for getting an optional value from an AnyRef. */
-  def singleGetter: PartialFunction[AnyRef,Option[T]]
 
   /**
    * PartialFunction for getting an optional value from the first AnyRef in the GetterInput that has Some value using getter.
@@ -40,18 +29,30 @@ trait SingleGetter[T] extends Getter[T] {
   }
 }
 
+trait NoGetter[T] extends PortableField[T] {
+  def getter = PortableField.emptyPartialFunction
+}
+
+trait Getter[T] extends PortableField[T] {
+  def updater[S <: AnyRef] = PortableField.emptyPartialFunction
+}
+
+private class Getter2[T](getter: PartialFunction[GetterInput,Option[T]])
+    extends SimplePortableField(getter, PortableField.emptyPartialFunction) with Getter[T]
+
+class SingleGetter[T](val singleGetter: PartialFunction[AnyRef,Option[T]])
+    extends Getter2[T]({
+      case input: GetterInput if input.items.exists(singleGetter.isDefinedAt(_)) =>
+        input.items.view.collect(singleGetter).find(_.isDefined).getOrElse(None)
+    })
+
 object Getter {
+  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter2[T](body)
 
-  def apply[T](body: PartialFunction[GetterInput,Option[T]]): Getter[T] = new Getter[T] {
-    override def getter = body
-  }
-
-  def single[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter[T] {
-    override def getter = {
-      case input: GetterInput if input.items.exists(body.isDefinedAt(_)) =>
-        input.items.view.collect(body).find(_.isDefined).getOrElse(None)
-    }
-  }
+  def single[T](body: PartialFunction[AnyRef,Option[T]]): Getter[T] = new Getter2[T]({
+    case input: GetterInput if input.items.exists(body.isDefinedAt(_)) =>
+      input.items.view.collect(body).find(_.isDefined).getOrElse(None)
+  })
 
   /** Defines a getter field for a type. */
   def apply[S <: AnyRef,T](body: S => Option[T])(implicit subjectManifest: ClassManifest[S]): TargetedGetter[S,T] =

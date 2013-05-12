@@ -5,7 +5,6 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import PortableField._
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
 import collection.mutable
 import converter.Converter._
 import scala.collection.immutable
@@ -16,9 +15,7 @@ import scala.collection.immutable
 
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
-  object LengthField extends SingleGetter[Int] {
-    val singleGetter: PartialFunction[AnyRef,Option[Int]] = { case s: String => s.length }
-  }
+  object LengthField extends SingleGetter[Int]({ case s: String => s.length })
 
   //required by contract spec
   def toBaseField[T](field: PortableField[T]) = field
@@ -381,9 +378,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
 
   describe("&&") {
     it("must extract both values") {
-      object FirstLetter extends SingleGetter[Char] {
-        val singleGetter: PartialFunction[AnyRef,Option[Char]] = { case s: String => s.head }
-      }
+      object FirstLetter extends SingleGetter[Char]({ case s: String => s.head })
+
       val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
       length must be (5)
       c must be ('H')

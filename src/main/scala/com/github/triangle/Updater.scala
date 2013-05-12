@@ -1,10 +1,5 @@
 package com.github.triangle
 
-/** A PortableField with no updater. */
-trait NoUpdater[T] extends PortableField[T] {
-  def updater[S <: AnyRef] = PortableField.emptyPartialFunction
-}
-
 /** A PortableField that has an updater but no getter. */
 trait Updater[T] extends NoGetter[T]
 

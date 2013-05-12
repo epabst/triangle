@@ -1,5 +1,7 @@
 package com.github.triangle
 
+import scala.PartialFunction
+
 trait UpdaterUsingSetter[T] extends PortableField[T] {
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
   def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
@@ -10,45 +12,48 @@ trait UpdaterUsingSetter[T] extends PortableField[T] {
   }
 }
 
-trait Setter[T] extends UpdaterUsingSetter[T] with NoGetter[T]
+class UpdaterUsingSetter2[T](getter: PartialFunction[GetterInput,Option[T]], _setter: PartialFunction[UpdaterInput[AnyRef,T],Unit])
+    extends SimplePortableField[T](getter, SimplePortableField.asUpdaterFunction {
+      case input @ UpdaterInput(subject, valueOpt, context) if _setter.isDefinedAt(input)=>
+        _setter(input); subject
+    }) {
+  def this(setter: PartialFunction[UpdaterInput[AnyRef,T],Unit]) {
+    this(PortableField.emptyPartialFunction, setter)
+  }
+
+  /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
+  def setter[S <: AnyRef] = _setter.asInstanceOf[PartialFunction[UpdaterInput[S,T],Unit]]
+}
 
 /** [[com.github.triangle.PortableField]] support for setting a value if {{{subject}}} is of type S.
-  * This is a trait so that it can be mixed with TargetedGetter.
   * S is the Writable type to put the value into
   */
-abstract class TargetedSetter[S <: AnyRef,T] extends PortableField[T] with TargetedField[S,T] with Setter[T] with Logging {
-  def subjectManifest: ClassManifest[S]
+class TargetedSetter[S <: AnyRef,T](setter: PartialFunction[UpdaterInput[S,T],Unit])
+                                   (implicit val subjectManifest: ClassManifest[S])
+    extends Setter[T](setter.asInstanceOf[PartialFunction[UpdaterInput[AnyRef,T],Unit]]) with TargetedField[S,T]
 
-  /** An abstract method that must be implemented by subtypes. */
-  def set(subject: S, value: Option[T], context: GetterInput)
-
-  def setter[S1 <: AnyRef]: PartialFunction[UpdaterInput[S1,T],Unit] = {
-    case UpdaterInput(subject, valueOpt, context) if subjectManifest.erasure.isInstance(subject) =>
-     set(subject.asInstanceOf[S], valueOpt, context)
-  }
+class Setter[T](_setter: PartialFunction[UpdaterInput[AnyRef,T],Unit])
+    extends SimplePortableField[T](PortableField.emptyPartialFunction, SimplePortableField.asUpdaterFunction {
+      case input @ UpdaterInput(subject, valueOpt, context) if _setter.isDefinedAt(input)=>
+        _setter(input); subject
+    }) {
+  /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
+  def setter[S <: AnyRef] = _setter.asInstanceOf[PartialFunction[UpdaterInput[S,T],Unit]]
 }
 
 object Setter {
-  def apply[T](body: PartialFunction[UpdaterInput[AnyRef,T],Unit]): Setter[T] = new Setter[T] {
-
-    /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-    def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
-      case input if body.isDefinedAt(input) => body(input)
-    }
-  }
+  def apply[T](body: PartialFunction[UpdaterInput[AnyRef,T],Unit]): Setter[T] = new Setter[T]({
+    case input if body.isDefinedAt(input) => body(input)
+  })
 
   /** Defines setter field for a mutable type with Option as the value type. */
-  def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit _subjectManifest: ClassManifest[S]): TargetedSetter[S,T] = {
-    new TargetedSetter[S,T] {
-      val subjectManifest = _subjectManifest
-
-      def set(subject: S, valueOpt: Option[T], context: GetterInput) {
-        body(subject)(valueOpt)
-      }
-
-      override val toString = "setter[" + subjectManifest.erasure.getSimpleName + "]"
+  def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit subjectManifest: ClassManifest[S]): TargetedSetter[S,T] =
+    new TargetedSetter[S,T](setter = {
+      case UpdaterInput(subject, valueOpt, context) if subjectManifest.erasure.isInstance(subject) =>
+        body(subject.asInstanceOf[S])(valueOpt)
+    })(subjectManifest) {
+      override val toString = "Setter[" + subjectManifest.erasure.getSimpleName + "]"
     }
-  }
 
   /** Defines a setter field for a Writable type, with separate functions for Some and None.
     * The body operates on a value directly, rather than on an Option.
