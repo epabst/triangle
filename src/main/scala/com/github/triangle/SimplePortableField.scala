@@ -17,7 +17,7 @@ package com.github.triangle
  *                 The return value is ignored if the subject is mutable (and presumably updated in place).
  */
 class SimplePortableField[T](val getter: PartialFunction[GetterInput,Option[T]] = PortableField.emptyPartialFunction,
-                             _updater: PartialFunction[UpdaterInput[AnyRef,T],AnyRef] = PortableField.emptyPartialFunction) extends PortableField[T] {
+                             _updater: PartialFunction[UpdaterInput[AnyRef,T],AnyRef] = PortableField.emptyField.updater) extends PortableField[T] {
   def updater[S <: AnyRef] = _updater.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
 }
 

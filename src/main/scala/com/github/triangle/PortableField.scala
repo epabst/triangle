@@ -136,7 +136,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
   final def updaterVal[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] =
     _updaterVal.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
 
-  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, Nothing]): Boolean = updaterVal.isDefinedAt(input)
+  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, T]): Boolean = updaterVal.isDefinedAt(input)
 
   //inherited
   def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
@@ -187,13 +187,15 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
 object PortableField {
-  def emptyField[T]: PortableField[T] = new SimplePortableField[T](emptyPartialFunction, emptyPartialFunction)
-
   private[triangle] val emptyPartialFunction: PartialFunction[Any,Nothing] = new PartialFunction[Any,Nothing] {
     def isDefinedAt(x: Any) = false
 
     def apply(v1: Any) = throw new MatchError("emptyPartialFunction")
   }
+
+  private val emptyFieldVal = new SimplePortableField[Any](emptyPartialFunction, emptyPartialFunction)
+
+  def emptyField[T]: PortableField[T] = emptyFieldVal.asInstanceOf[PortableField[T]]
 
   //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
   implicit def toSome[T](value: T): Option[T] = Some(value)
