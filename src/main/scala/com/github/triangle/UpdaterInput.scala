@@ -14,6 +14,8 @@ case class UpdaterInput[+S <: AnyRef,+T](subject: S, valueOpt: Option[T], contex
   def withValue[T2](newValueOpt: Option[T2]): UpdaterInput[S,T2] = copy(valueOpt = newValueOpt)
 
   lazy val withUndeterminedValue = withValue(UpdaterInput.undeterminedValue)
+
+  lazy val asGetterInput = subject +: context
 }
 
 object UpdaterInput {
