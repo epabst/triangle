@@ -66,6 +66,7 @@ class ConverterSpec extends FunSpec with MustMatchers {
       stringToDate.convert("1/19/2005").get must be(new GregorianCalendar(2005, Calendar.JANUARY, 19).getTime)
       stringToDate.convert("12/1/2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
       stringToDate.convert("1 Dec 2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
+      stringToDate.convert("2013-6-6").get must be(new GregorianCalendar(2013, Calendar.JUNE, 6).getTime)
     }
 
     it("must handle the default format for the current Locale") {

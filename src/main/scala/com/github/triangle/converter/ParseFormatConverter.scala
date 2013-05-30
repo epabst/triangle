@@ -12,6 +12,6 @@ class ParseFormatConverter[T](format: Format, obj2Value: (Object) => T = {(v: Ob
   def convert(string: String) = {
     val position = new ParsePosition(0)
     val result = format.parseObject(string, position)
-    if (position.getIndex == 0) None else Some(obj2Value(result))
+    if (result == null) None else Some(obj2Value(result))
   }
 }
