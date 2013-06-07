@@ -8,6 +8,7 @@ import Converter._
 import GenericConverter._
 import java.util.{Calendar, GregorianCalendar, Date}
 import java.text.DateFormat
+import scala.concurrent.ops
 
 /** A behavior specification for [[com.github.triangle.converter.Converter]].
   * @author Eric Pabst (epabst@gmail.com)
@@ -67,6 +68,26 @@ class ConverterSpec extends FunSpec with MustMatchers {
       stringToDate.convert("12/1/2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
       stringToDate.convert("1 Dec 2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
       stringToDate.convert("2013-6-6").get must be(new GregorianCalendar(2013, Calendar.JUNE, 6).getTime)
+    }
+
+    it("must be thread-safe") {
+      List(ops.future {
+        (1 to 1000).foreach { _ =>
+         stringToDate.convert("1/19/2005").get must be(new GregorianCalendar(2005, Calendar.JANUARY, 19).getTime)
+        }
+      }, ops.future {
+        (1 to 1000).foreach { _ =>
+          stringToDate.convert("12/1/2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
+        }
+      }, ops.future {
+        (1 to 1000).foreach { _ =>
+          stringToDate.convert("1 Dec 2005").get must be(new GregorianCalendar(2005, Calendar.DECEMBER, 1).getTime)
+        }
+      }, ops.future {
+        (1 to 1000).foreach { _ =>
+          stringToDate.convert("2013-6-6").get must be(new GregorianCalendar(2013, Calendar.JUNE, 6).getTime)
+        }
+      }).foreach(_.apply())
     }
 
     it("must handle the default format for the current Locale") {

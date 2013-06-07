@@ -36,8 +36,8 @@ object ValueFormat {
     override def toString(value: Calendar) = format.toString(calendarToDate.convert(value).get)
   }
 
-  def textValueFormat[T](format: Format, obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}): ValueFormat[T] =
-    convertingFormat[T](new ParseFormatConverter[T](format, obj2Value), formatToString[T](format))
+  def textValueFormat[T](formatThreadLocal: ThreadLocal[_ <: Format], obj2Value: (Object) => T = {(v: Object) => v.asInstanceOf[T]}): ValueFormat[T] =
+    convertingFormat[T](new ParseFormatConverter[T](formatThreadLocal, obj2Value), formatToString[T](formatThreadLocal))
 
   def enumFormat[T <: Enumeration#Value](enum: Enumeration): ValueFormat[T] = convertingFormat[T](stringToEnum(enum))
 
@@ -50,5 +50,5 @@ object ValueFormat {
   lazy val dateDisplayValueFormat = convertingFormat(stringToDate, dateToDisplayString)
   lazy val calendarValueFormat = toCalendarFormat(dateValueFormat)
   lazy val calendarDisplayValueFormat = toCalendarFormat(dateDisplayValueFormat)
-  lazy val persistedDateFormat = textValueFormat[Date](new SimpleDateFormat("yyyy-MM-dd"))
+  lazy val persistedDateFormat = textValueFormat[Date](toThreadLocal(new SimpleDateFormat("yyyy-MM-dd")))
 }

@@ -37,38 +37,40 @@ object Converter {
     def convert(from: Any) = None
   }
 
-  private lazy val defaultCurrencyFormat = NumberFormat.getCurrencyInstance
+  private lazy val defaultCurrencyFormatThreadLocal = toThreadLocal[NumberFormat](NumberFormat.getCurrencyInstance)
 
-  private lazy val currencyFormat = {
+  private lazy val currencyFormat = toThreadLocal[Format] {
     val format = NumberFormat.getNumberInstance
+    val defaultCurrencyFormat = defaultCurrencyFormatThreadLocal.get()
     format.setMinimumFractionDigits(defaultCurrencyFormat.getMinimumFractionDigits)
     format.setMaximumFractionDigits(defaultCurrencyFormat.getMaximumFractionDigits)
     format.setGroupingUsed(defaultCurrencyFormat.isGroupingUsed)
     format.setGroupingUsed(defaultCurrencyFormat.isGroupingUsed)
     format
   }
-  private lazy val currencyEditFormat = {
+  private lazy val currencyEditFormat = toThreadLocal[Format] {
     val editFormat = NumberFormat.getNumberInstance
+    val defaultCurrencyFormat = defaultCurrencyFormatThreadLocal.get()
     editFormat.setMinimumFractionDigits(defaultCurrencyFormat.getMinimumFractionDigits)
     editFormat.setMaximumFractionDigits(defaultCurrencyFormat.getMaximumFractionDigits)
     editFormat
   }
 
   val stringToCurrency: Converter[String,Double] = new CompositeDirectConverter[String,Double](
-    List(currencyEditFormat, currencyFormat, NumberFormat.getNumberInstance, defaultCurrencyFormat).map(
-      new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue))
+    List(currencyEditFormat, currencyFormat, toThreadLocal[Format](NumberFormat.getNumberInstance), defaultCurrencyFormatThreadLocal).map(
+      (new ParseFormatConverter[Double](_, _.asInstanceOf[Number].doubleValue)))
   )
 
-  private lazy val percentagePercentFormat = NumberFormat.getPercentInstance
-  private lazy val percentageEditNumberFormat = {
+  private lazy val percentagePercentFormat: ThreadLocal[NumberFormat] = toThreadLocal(NumberFormat.getPercentInstance)
+  private lazy val percentageEditNumberFormat = toThreadLocal {
     val editFormat = NumberFormat.getNumberInstance
-    editFormat.setMinimumFractionDigits(percentagePercentFormat.getMinimumFractionDigits)
-    editFormat.setMaximumFractionDigits(percentagePercentFormat.getMaximumFractionDigits)
+    editFormat.setMinimumFractionDigits(percentagePercentFormat.get().getMinimumFractionDigits)
+    editFormat.setMaximumFractionDigits(percentagePercentFormat.get().getMaximumFractionDigits)
     editFormat
   }
   val stringToPercentage: Converter[String,Float] = new CompositeDirectConverter[String,Float](
     new ParseFormatConverter[Float](percentagePercentFormat, _.asInstanceOf[Number].floatValue()) +:
-      List(percentageEditNumberFormat, NumberFormat.getNumberInstance).map(
+      List(percentageEditNumberFormat, toThreadLocal(NumberFormat.getNumberInstance)).map(
         new ParseFormatConverter[Float](_, _.asInstanceOf[Number].floatValue() / 100))
   )
   lazy val percentageToEditString: Converter[Float,String] = new Converter[Float,String] {
@@ -88,18 +90,24 @@ object Converter {
   }
   lazy val calendarToDate = Converter[Calendar, Date](c => Some(c.getTime))
 
-  def formatToString[T](format: Format): Converter[T,String] = Converter[T,String](value => Some(format.format(value)))
+  def formatToString[T](format: ThreadLocal[_ <: Format]): Converter[T,String] = Converter[T,String](value => Some(format.get().format(value)))
 
   lazy val currencyToString: Converter[Double,String] = formatToString[Double](currencyFormat)
   lazy val currencyToEditString: Converter[Double,String] = formatToString[Double](currencyEditFormat)
 
-  private lazy val dateFormats = List(DateFormat.SHORT, DateFormat.DEFAULT, DateFormat.MEDIUM).map(DateFormat.getDateInstance(_)) ++
-          List("MM/dd/yyyy", "yyyy-MM-dd", "dd MMM yyyy").map(new java.text.SimpleDateFormat(_))
-  lazy val stringToDate = new CompositeDirectConverter[String,Date](dateFormats.map(new ParseFormatConverter[Date](_)))
+  private def threadLocalDateFormats = List(DateFormat.SHORT, DateFormat.DEFAULT, DateFormat.MEDIUM).map { dateFormatType =>
+    toThreadLocal[Format](DateFormat.getDateInstance(dateFormatType))
+  } ++ List("MM/dd/yyyy", "yyyy-MM-dd", "dd MMM yyyy").map(s => toThreadLocal[Format](new java.text.SimpleDateFormat(s)))
+
+  private[converter] def toThreadLocal[T](factory: => T): ThreadLocal[T] = new ThreadLocal[T] {
+    override def initialValue() = factory
+  }
+
+  lazy val stringToDate = new CompositeDirectConverter[String,Date](threadLocalDateFormats.map(new ParseFormatConverter[Date](_)))
   //SHORT is probably the best style for input
-  lazy val dateToString = formatToString[Date](DateFormat.getDateInstance(DateFormat.SHORT))
+  lazy val dateToString = formatToString[Date](toThreadLocal(DateFormat.getDateInstance(DateFormat.SHORT)))
   //DEFAULT is probably the best style for output
-  lazy val dateToDisplayString = formatToString[Date](DateFormat.getDateInstance(DateFormat.DEFAULT))
+  lazy val dateToDisplayString = formatToString[Date](toThreadLocal(DateFormat.getDateInstance(DateFormat.DEFAULT)))
 
   def stringToEnum[T <: Enumeration#Value](enumeration: Enumeration): Converter[String,T] = new Converter[String,T] {
     def convert(from: String) = enumeration.values.find(_.toString == from).map(_.asInstanceOf[T])
