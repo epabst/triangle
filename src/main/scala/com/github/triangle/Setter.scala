@@ -7,8 +7,8 @@ trait UpdaterUsingSetter[T] extends PortableField[T] {
   def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
 
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case input @ UpdaterInput(subject, valueOpt, context) if setter.isDefinedAt(input)=>
-      setter(input); subject
+    case input if setter.isDefinedAt(input)=>
+      setter(input); input.subject
   }
 }
 
