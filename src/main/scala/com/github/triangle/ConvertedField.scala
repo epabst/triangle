@@ -6,8 +6,8 @@ import converter.ValueFormat
 class ConvertedField[T,F](val delegate: PortableField[F], val converter: F => Option[T], val unconverter: T => Option[F])
     extends SimplePortableField[T](delegate.getterVal.andThen(value => value.flatMap(converter(_))),
       _updater = {
-        case input @ UpdaterInput(subject, valueOpt, context) if delegate.updaterVal.isDefinedAt(input.withUndeterminedValue) =>
-          val unconvertedValue: Option[F] = valueOpt.flatMap(unconverter(_))
+        case input: UpdaterInput[_,T] if delegate.updaterVal.isDefinedAt(input.withUndeterminedValue) =>
+          val unconvertedValue: Option[F] = input.valueOpt.flatMap(unconverter(_))
           delegate.updaterVal(input.withValue(unconvertedValue))
       }) with FieldWithDelegate[T] {
   override lazy val toString = "converted(" + delegate + ")"
