@@ -8,6 +8,7 @@ import org.scalatest.mock.MockitoSugar
 import collection.mutable
 import converter.Converter._
 import scala.collection.immutable
+import org.mockito.Mockito
 
 /** A behavior specification for [[com.github.triangle.PortableField]].
   * @author Eric Pabst (epabst@gmail.com)
@@ -55,6 +56,49 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     it("must extract values from items") {
       val LengthField(Some(length)) = GetterInput(new Object, "Hello", new Object)
       length must be (5)
+    }
+
+    it("must not call condition twice") {
+      val mockCondition = mock[() => Boolean]
+      Mockito.when(mockCondition.apply()).thenReturn(true)
+
+      val field = Getter.single({
+        case _: String if mockCondition.apply() =>
+          Some("hello world")
+      })
+      field.getValue("hi") must be (Some("hello world"))
+      Mockito.verify(mockCondition, Mockito.times(1)).apply()
+    }
+
+    describe("getter.andThen.orElse") {
+      it("must not call condition twice") {
+        val mockCondition = mock[() => Boolean]
+        Mockito.when(mockCondition.apply()).thenReturn(true)
+
+        val field = Getter.single({
+          case _: String if mockCondition.apply() =>
+            Some("hello world")
+        })
+        val getterInput = GetterInput.single("hi")
+
+        val result = evalGetterAsIfLifted(field, getterInput)
+        result must be (Some(Some("hello world")))
+        Mockito.verify(mockCondition, Mockito.times(1)).apply()
+      }
+    }
+
+    describe("lift") {
+      it("must not call condition twice") {
+        val mockCondition = mock[() => Boolean]
+        Mockito.when(mockCondition.apply()).thenReturn(true)
+
+        val field = Getter.single({
+          case "hi" if mockCondition.apply() =>
+            Some("hello world")
+        })
+        field.getter.lift.apply(GetterInput.single("hi")) must be (Some(Some("hello world")))
+        Mockito.verify(mockCondition, Mockito.times(1)).apply()
+      }
     }
 
     describe("default") {
@@ -376,6 +420,14 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     }
   }
 
+
+  private def evalGetterAsIfLifted[T](field: Getter[T], getterInput: GetterInput): Option[Option[T]] = {
+    val evaluateAsInapplicable: PartialFunction[GetterInput, Option[Option[T]]] = {
+      case _: AnyRef => None
+    }
+    field.getter.andThen(Some(_)).orElse(evaluateAsInapplicable).apply(getterInput)
+  }
+
   describe("&&") {
     it("must extract both values") {
       object FirstLetter extends SingleGetter[Char]({ case s: String => s.head })
@@ -386,3 +438,5 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     }
   }
 }
+
+private object Inapplicable

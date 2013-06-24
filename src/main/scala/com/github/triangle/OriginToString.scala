@@ -22,10 +22,10 @@ trait OriginToString {
   private lazy val toStringVal = super.toString + " [from " + origin + "]"
   override def toString = toStringVal
 
-  protected def withToString[A,B](string: String)(f: PartialFunction[A,B]): PartialFunction[A,B] = new PartialFunction[A,B] {
+  protected def withToString[A,B](string: String)(f: PartialFunct[A,B]): PartialFunct[A,B] = new PartialFunct[A,B] {
     def isDefinedAt(x: A) = f.isDefinedAt(x)
 
-    def apply(x: A) = f.apply(x)
+    def attempt(x: A) = f.attempt(x)
 
     override def toString() = string
   }

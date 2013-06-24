@@ -34,7 +34,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
   def getter: PartialFunction[GetterInput,Option[T]]
 
   /** The same as getter, but it is only evaluated once and its toString method is set for debugging. */
-  final lazy val getterVal: PartialFunction[GetterInput,Option[T]] = withToString("getter of " + this)(getter)
+  final lazy val getterVal: PartialFunct[GetterInput,Option[T]] = withToString("getter of " + this)(PartialFunct(getter))
 
   /**
    * Get an optional value from the given AnyRef.
@@ -131,10 +131,10 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
    */
   def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S]
 
-  private final lazy val _updaterVal: PartialFunction[UpdaterInput[AnyRef,T],AnyRef] = withToString("updater of " + this)(updater)
+  private final lazy val _updaterVal: PartialFunct[UpdaterInput[AnyRef,T],AnyRef] = withToString("updater of " + this)(PartialFunct(updater))
   /** The same as updater, but it is only evaluated once and its toString method is set. */
-  final def updaterVal[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] =
-    _updaterVal.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
+  final def updaterVal[S <: AnyRef]: PartialFunct[UpdaterInput[S,T],S] =
+    _updaterVal.asInstanceOf[PartialFunct[UpdaterInput[S,T],S]]
 
   def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, T]): Boolean = updaterVal.isDefinedAt(input)
 
@@ -152,12 +152,12 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
   def copyFrom(from: AnyRef): PortableValue = copyFrom(GetterInput.single(from))
 
   def copyFrom(input: GetterInput): PortableValue =
-    (if (getterVal.isDefinedAt(input)) {
+    if (getterVal.isDefinedAt(input)) {
       this -> getterVal(input)
     } else {
       debug("Unable to copy from " + PortableField.truncate(input) + " for field " + PortableField.truncate(this) + " because of getter.")
       PortableValue.empty
-    })
+    }
 
   override def copy(from: AnyRef, to: AnyRef) {
     copy(GetterInput.single(from), to)

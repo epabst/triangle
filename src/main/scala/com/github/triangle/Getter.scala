@@ -14,9 +14,12 @@ class Getter[T](getter: PartialFunction[GetterInput,Option[T]])
     extends SimplePortableField(getter, PortableField.emptyPartialFunction)
 
 class SingleGetter[T](val singleGetter: PartialFunction[AnyRef,Option[T]])
-    extends Getter[T]({
-      case input: GetterInput if input.items.exists(singleGetter.isDefinedAt(_)) =>
-        input.items.view.collect(singleGetter).find(_.isDefined).getOrElse(None)
+    extends Getter[T](new PartialFunct[GetterInput, Option[T]] {
+      private val singleGetterFunct = PartialFunct(singleGetter)
+
+      def isDefinedAt(input: GetterInput) = input.items.exists(singleGetter.isDefinedAt(_))
+
+      def attempt(input: GetterInput) = input.items.view.flatMap(singleGetterFunct.attempt(_)).headOption
     })
 
 object Getter {
