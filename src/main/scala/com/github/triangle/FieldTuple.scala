@@ -44,15 +44,18 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
 
   /** Converts the FieldTuple to a Getter PortableField that accepts a composite type T and a combiner function. */
   def asGetter[T](combiner: ValuesTuple => Option[T]): TupleField[T] =
-    new TupleField[T](getter = {
-      case input if productIterator.forall(_.getterVal.isDefinedAt(input)) => combiner(valuesTuple(input))
+    new TupleField[T](getter = new GatedFunction[GetterInput,Option[T]] {
+      def isDefinedAt(input: GetterInput) = productIterator.forall(_.getterVal.isDefinedAt(input))
+
+      def applyToDomain(input: GetterInput) = combiner(valuesTuple(input))
     })
 
   /** Creates a PortableField with an Updater that accepts a composite type T and a splitter function. */
   def asUpdater[T](splitter: T => ValuesTuple): TupleField[T] =
-    new TupleField[T](_updater = {
-      case input @ UpdaterInput(subject, valueOpt, _) if productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue)) =>
-        updateWithValues(subject, valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
+    new TupleField[T](_updater = new GatedFunction[UpdaterInput[AnyRef,T],AnyRef] {
+      def isDefinedAt(input: UpdaterInput[AnyRef, T]) = productIterator.forall(_.updater.isDefinedAt(input.withUndeterminedValue))
+
+      def applyToDomain(input: UpdaterInput[AnyRef, T]) = updateWithValues(input.subject, input.valueOpt.map(splitter(_)).getOrElse(emptyValuesTuple))
     })
 
   def canEqual(that: Any) = that match {

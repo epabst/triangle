@@ -25,36 +25,54 @@ class Field[T](val delegate: PortableField[T]) extends SimplePortableField[T](de
 trait PartialDelegatingField[T] extends FieldWithDelegate[T] with UpdaterUsingSetter[T] {
   protected def delegate: PortableField[T]
   protected def subjectGetter: PartialFunction[AnyRef,AnyRef]
+  private lazy val subjectGetterFunct = PartialFunct(subjectGetter)
 
   private lazy val delegateGetter = delegate.getterVal
 
-  def getter: PartialFunction[GetterInput,Option[T]] = {
-    case input: GetterInput if delegateGetter.isDefinedAt(GetterInput(input.items.collect(subjectGetter))) =>
-      delegateGetter.apply(GetterInput(input.items.collect(subjectGetter)))
+  def getter: PartialFunct[GetterInput,Option[T]] = new PartialFunct[GetterInput, Option[T]] {
+    def isDefinedAt(input: GetterInput) = delegateGetter.isDefinedAt(GetterInput(input.items.collect(subjectGetterFunct)))
+
+    def attempt(input: GetterInput) = delegateGetter.attempt(GetterInput(input.items.collect(subjectGetterFunct)))
   }
 
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
-  def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit] = {
-    case input @ UpdaterInput(subject, valueOpt, context)
-      if subjectGetter.isDefinedAt(subject) && delegate.updaterVal.isDefinedAt(input.copy(subject = subjectGetter(subject))) =>
-        delegate.updaterVal(input.copy(subject = subjectGetter(subject)))
+  def setter[S <: AnyRef]: PartialFunct[UpdaterInput[S,T],Unit] = new PartialFunct[UpdaterInput[S, T], Unit] {
+    def isDefinedAt(input: UpdaterInput[S, T]) = {
+      val subject: S = input.subject
+      subjectGetterFunct.attempt(subject).exists { nestedSubject =>
+        delegate.updaterVal.isDefinedAt(input.copy(subject = nestedSubject))
+      }
+    }
+
+    def attempt(input: UpdaterInput[S, T]) = {
+      val subject: S = input.subject
+      subjectGetterFunct.attempt(subject).map { nestedSubject =>
+        delegate.updaterVal.attempt(input.copy(subject = nestedSubject))
+        Unit
+      }
+    }
   }
 }
 
 /** A PortableField that delegates to another field that modifies part of the subject, as defined by {{{subjectGetter}}}. */
 class NestedField[T](nestedSubjectField: PortableField[AnyRef], val nestedField: PortableField[T])
-    extends SimplePortableField[T](getter = {
-      case input: GetterInput if nestedSubjectField.getter.isDefinedAt(input) &&
-          nestedSubjectField(input).map(nestedSubject => nestedField.getter.isDefinedAt(nestedSubject +: input)).getOrElse(true) =>
-        nestedSubjectField.getter(input).flatMap(nestedSubject => nestedField.getter.apply(nestedSubject +: input))
+    extends SimplePortableField[T](getter = new PartialFunct[GetterInput, Option[T]] {
+      def isDefinedAt(input: GetterInput) =
+          nestedSubjectField.getterVal.attempt(input).exists(nestedSubject => nestedField.getter.isDefinedAt(nestedSubject +: input))
+
+      def attempt(input: GetterInput) =
+        nestedSubjectField.getterVal.attempt(input).flatMap(nestedSubject => nestedField.getterVal.attempt(nestedSubject +: input))
     },
-    _updater = {
-      case input @ UpdaterInput(subject, valueOpt, context) if nestedSubjectField.getter.isDefinedAt(input.asGetterInput) &&
-          nestedSubjectField(input.asGetterInput).map(nestedSubject => nestedField.isUpdaterDefinedAt(input.copy(subject = nestedSubject))).getOrElse(true) =>
-        nestedSubjectField(input.asGetterInput).map { nestedSubject =>
-          val updatedNestedSubject = nestedField.updaterVal(input.copy(subject = nestedSubject))
-          nestedSubjectField.update(input.withValue(Some(updatedNestedSubject)))
-        }.getOrElse(subject)
+    _updater = new PartialFunct[UpdaterInput[AnyRef, T], AnyRef] {
+      def isDefinedAt(input: UpdaterInput[AnyRef, T]) =
+        nestedSubjectField.getterVal.attempt(input.asGetterInput).exists(nestedSubject => nestedField.updaterVal.isDefinedAt(input.copy(subject = nestedSubject)))
+
+      def attempt(input: UpdaterInput[AnyRef, T]) =
+        nestedSubjectField.getterVal.attempt(input.asGetterInput).map { nestedSubject =>
+          nestedField.updaterVal.attempt(input.copy(subject = nestedSubject)).map { updatedNestedSubject =>
+            nestedSubjectField.update(input.withValue(Some(updatedNestedSubject)))
+          }.getOrElse(input.subject)
+        }
     }) {
   override def deepCollect[R](f: PartialFunction[BaseField, R]) =
     f.lift(this).map(List(_)).getOrElse(nestedSubjectField.deepCollect(f) ++ nestedField.deepCollect(f))

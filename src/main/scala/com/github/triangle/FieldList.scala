@@ -28,9 +28,10 @@ abstract class FieldList extends BaseField with Traversable[BaseField] with Logg
     copyableTo(UpdaterInput(subject, context))
 
   /** Narrows the FieldList to fields whose updater isDefinedAt the given subject. */
-  def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = FieldList(deepCollect {
-    case (field: PortableField[_]) if field.isUpdaterDefinedAt(updaterInput) => field
-  })
+  def copyableTo(updaterInput: UpdaterInput[_ <: AnyRef, Nothing]): FieldList = FieldList(deepFilter { _ match {
+    case (field: PortableField[_]) if field.updaterVal.isDefinedAt(updaterInput) => true
+    case _ => false
+  }})
 
   def copyAndUpdate[S <: AnyRef](dataItems: GetterInput, initial: S): S = {
     fields.foldLeft(initial)((subject, field) => field.copyAndUpdate(dataItems, subject))

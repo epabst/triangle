@@ -9,23 +9,30 @@ package com.github.triangle
 case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
     extends SimplePortableField[T]({
       val getters = fields.map(field => field.getterVal)
-      SimplePortableField.asGetterFunction {
-        case items if getters.exists(_.isDefinedAt(items)) =>
-          val definedGetters = getters.filter(_.isDefinedAt(items))
-          val values = definedGetters.map { definedGetter =>
-            val value = definedGetter.apply(items)
-            require(value != null, definedGetter + " is non-functional.  It should never return a null.")
-            value
-          }
-          values.find(_.isDefined).getOrElse(None)
+      new PartialFunct[GetterInput,Option[T]] {
+        def isDefinedAt(input: GetterInput) = getters.exists(_.isDefinedAt(input))
+
+        def attempt(input: GetterInput) = {
+          val lazyValueOpts = getters.view.flatMap(_.attemptAndCheckForNulls(input))
+          lazyValueOpts.find(_.isDefined).orElse(lazyValueOpts.headOption)
+        }
       }
     }, {
-      /** Combines the two updaters, calling only applicable ones (not just the first though). */
-      val updaters = fields.map(_.updaterVal[AnyRef])
-      SimplePortableField.asUpdaterFunction {
-        case input @ UpdaterInput(subject, valueOpt, context) if updaters.exists(_.isDefinedAt(input)) =>
-          val definedUpdaters = updaters.filter(_.isDefinedAt(input))
-          definedUpdaters.foldLeft(subject)((subject: AnyRef, updater) => updater.apply(input.copy(subject = subject)))
+      /** Combines the updaters, calling all of them (not stopping when one works). */
+      new PartialFunct[UpdaterInput[AnyRef, T], AnyRef] {
+        val updaters = fields.map(_.updaterVal[AnyRef])
+
+        def isDefinedAt(input: UpdaterInput[AnyRef, T]) = updaters.exists(_.isDefinedAt(input))
+
+        def attempt(input: UpdaterInput[AnyRef, T]) =
+          updaters.foldLeft(PartialResult(false, input.subject)) { (partialResult, updater) =>
+            updater.attempt(input.copy(subject = partialResult.tentativeResult)) match {
+              case Some(updatedSubject) =>
+                PartialResult(defined = true, updatedSubject)
+              case None =>
+                partialResult
+            }
+          }.toOption
       }
     }) {
 
@@ -42,6 +49,10 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
   override def +(other: PortableField[T]) = TypedFieldSeq(fields :+ other)
 
   override lazy val toString = fields.mkString(" + ")
+}
+
+private case class PartialResult[T](defined: Boolean, tentativeResult: T) {
+  def toOption: Option[T] = if (defined) Some(tentativeResult) else None
 }
 
 object TypedFieldSeq {

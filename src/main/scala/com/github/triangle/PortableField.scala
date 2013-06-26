@@ -88,12 +88,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
    * case MyField(None) => ...
    * }}}
    */
-  def unapply(subject: GetterInput): Option[Option[T]] = subject match {
-    case items: GetterInput if getterVal.isDefinedAt(items) =>
-      Some(getterVal(items))
-    case _ =>
-      None
-  }
+  def unapply(subject: GetterInput): Option[Option[T]] = getterVal.attempt(subject)
 
   /** An extractor from an AnyRef that matches the value as an Option.
     * Example: {{{case MyField(Some(string)) => ...}}}
@@ -112,10 +107,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
    * @return the updated subject, which could be the initial instance
    */
   def update[S <: AnyRef](updaterInput: UpdaterInput[S,T]): S = {
-    val defined = updaterVal[S].isDefinedAt(updaterInput)
-    if (defined) {
-      updaterVal(updaterInput)
-    } else {
+    updaterVal.attempt(updaterInput).getOrElse {
       debug("Unable to update " + updaterInput.subject + " with value " + updaterInput.valueOpt + " for field " + this + " with context " + updaterInput.context + ".")
       updaterInput.subject
     }
@@ -136,8 +128,6 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
   final def updaterVal[S <: AnyRef]: PartialFunct[UpdaterInput[S,T],S] =
     _updaterVal.asInstanceOf[PartialFunct[UpdaterInput[S,T],S]]
 
-  def isUpdaterDefinedAt(input: UpdaterInput[_ <: AnyRef, T]): Boolean = updaterVal.isDefinedAt(input)
-
   //inherited
   def copyAndUpdate[S <: AnyRef](input: GetterInput, initial: S): S = {
     val updaterInput = UpdaterInput(initial, input)
@@ -152,9 +142,7 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
   def copyFrom(from: AnyRef): PortableValue = copyFrom(GetterInput.single(from))
 
   def copyFrom(input: GetterInput): PortableValue =
-    if (getterVal.isDefinedAt(input)) {
-      this -> getterVal(input)
-    } else {
+    getterVal.attempt(input).map(this -> _).getOrElse {
       debug("Unable to copy from " + PortableField.truncate(input) + " for field " + PortableField.truncate(this) + " because of getter.")
       PortableValue.empty
     }

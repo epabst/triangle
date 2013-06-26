@@ -1,7 +1,7 @@
 package com.github.triangle
 
 /**
- * A wrapper around PartialFunction to make it more performant.
+ * A wrapper around PartialFunction to make it perform better.
  * It has an issue described by a maintainer of "unfiltered" where the apply method calls the isDefinedAt method.
  * This is a problem because the contract is that apply shouldn't be called if isDefinedAt returns false,
  * however, it's run in apply anyway, so all the work that it does including unapply method calls, conditions, etc.
@@ -11,13 +11,19 @@ package com.github.triangle
  *         Date: 6/21/13
  *         Time: 4:55 PM
  */
-trait PartialFunct[-A,+B] extends PartialFunction[A,B] { self =>
+abstract class PartialFunct[-A,+B] extends PartialFunction[A,B] { self =>
   override val lift = attempt(_)
 
   def attempt(x: A): Option[B]
 
-  final def apply(x: A) = attempt(x).getOrElse(throw new MatchError(x))
+  def attemptAndCheckForNulls(x: A): Option[B] = {
+    val attemptedValueOpt = attempt(x)
+    require(attemptedValueOpt != null, this + " is non-functional.  'attempt' should never return a null.")
+    require(attemptedValueOpt != Some(null), this + " is non-functional.  'attempt' should never return a Some(null).")
+    attemptedValueOpt
+  }
 
+  final def apply(x: A) = attempt(x).getOrElse(throw new MatchError(x))
 
   override def andThen[C](f: (B) => C): PartialFunct[A, C] = {
     new PartialFunct[A, C] {

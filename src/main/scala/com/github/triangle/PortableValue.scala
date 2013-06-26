@@ -39,10 +39,8 @@ class PortableValue1[T](field: PortableField[T], value: Option[T]) extends Tuple
   def update[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]): S = {
     val initial = updaterInput.subject
     val updaterInputWithValue = updaterInput.withValue(value)
-    if (field.updaterVal.isDefinedAt(updaterInputWithValue)) {
-      trace("About to " + PortableField.update_with_forField_message(initial, "value " + value, field))
-      field.updaterVal(updaterInputWithValue)
-    } else {
+    trace("About to attempt to " + PortableField.update_with_forField_message(initial, "value " + value, field))
+    field.updaterVal.attempt(updaterInputWithValue).getOrElse {
       debug("Unable to " + PortableField.update_with_forField_message(initial, "value " + value, field) + " due to updater")
       initial
     }

@@ -6,16 +6,24 @@ trait UpdaterUsingSetter[T] extends PortableField[T] {
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
   def setter[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],Unit]
 
-  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = {
-    case input if setter.isDefinedAt(input)=>
-      setter(input); input.subject
-  }
+  private lazy val updaterVal: PartialFunct[UpdaterInput[AnyRef, T], AnyRef] = new UpdaterUsingSetterFunct[AnyRef,T](PartialFunct(setter))
+
+  def updater[S <: AnyRef]: PartialFunction[UpdaterInput[S,T],S] = updaterVal.asInstanceOf[PartialFunction[UpdaterInput[S,T],S]]
+}
+
+private class UpdaterUsingSetterFunct[S <: AnyRef,T](setter: PartialFunct[UpdaterInput[S,T],Unit]) extends PartialFunct[UpdaterInput[S, T], S] {
+  def isDefinedAt(input: UpdaterInput[S, T]) = setter.isDefinedAt(input)
+
+  def attempt(input: UpdaterInput[S, T]) = setter.attempt(input).map(_ => input.subject)
 }
 
 class UpdaterUsingSetter2[T](getter: PartialFunction[GetterInput,Option[T]], _setter: PartialFunction[UpdaterInput[AnyRef,T],Unit])
-    extends SimplePortableField[T](getter, SimplePortableField.asUpdaterFunction {
-      case input @ UpdaterInput(subject, valueOpt, context) if _setter.isDefinedAt(input)=>
-        _setter(input); subject
+    extends SimplePortableField[T](getter, new PartialFunct[UpdaterInput[AnyRef,T],AnyRef] {
+      private val setterFunct = PartialFunct(_setter)
+
+      def isDefinedAt(input: UpdaterInput[AnyRef, T]) = _setter.isDefinedAt(input)
+
+      def attempt(input: UpdaterInput[AnyRef, T]) = setterFunct.attempt(input).map(_ => input.subject)
     }) {
   def this(setter: PartialFunction[UpdaterInput[AnyRef,T],Unit]) {
     this(PortableField.emptyPartialFunction, setter)
@@ -33,18 +41,13 @@ class TargetedSetter[S <: AnyRef,T](setter: PartialFunction[UpdaterInput[S,T],Un
     extends Setter[T](setter.asInstanceOf[PartialFunction[UpdaterInput[AnyRef,T],Unit]]) with TargetedField[S,T]
 
 class Setter[T](_setter: PartialFunction[UpdaterInput[AnyRef,T],Unit])
-    extends SimplePortableField[T](PortableField.emptyPartialFunction, SimplePortableField.asUpdaterFunction {
-      case input @ UpdaterInput(subject, valueOpt, context) if _setter.isDefinedAt(input)=>
-        _setter(input); subject
-    }) {
+    extends SimplePortableField[T](PortableField.emptyPartialFunction, new UpdaterUsingSetterFunct[AnyRef,T](PartialFunct(_setter))) {
   /** A setter.  It is identical to updater but doesn't have to return the modified subject. */
   def setter[S <: AnyRef] = _setter.asInstanceOf[PartialFunction[UpdaterInput[S,T],Unit]]
 }
 
 object Setter {
-  def apply[T](body: PartialFunction[UpdaterInput[AnyRef,T],Unit]): Setter[T] = new Setter[T]({
-    case input if body.isDefinedAt(input) => body(input)
-  })
+  def apply[T](body: PartialFunction[UpdaterInput[AnyRef,T],Unit]): Setter[T] = new Setter[T](body)
 
   /** Defines setter field for a mutable type with Option as the value type. */
   def apply[S <: AnyRef,T](body: S => Option[T] => Unit)(implicit subjectManifest: ClassManifest[S]): TargetedSetter[S,T] =

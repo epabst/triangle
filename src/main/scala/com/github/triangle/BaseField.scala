@@ -53,4 +53,10 @@ abstract class BaseField extends OriginToString {
     */
   // Default implementation only checks this field.  This should be overridden for any field wrapping other fields.
   def deepCollect[R](f: PartialFunction[BaseField, R]): Seq[R] = f.lift.apply(this).toSeq
+
+  def deepFilter(shouldInclude: BaseField => Boolean): Seq[BaseField] = deepCollect(new GatedFunction[BaseField,BaseField] {
+    def isDefinedAt(field: BaseField) = shouldInclude(field)
+
+    def applyToDomain(field: BaseField) = field
+  })
 }
