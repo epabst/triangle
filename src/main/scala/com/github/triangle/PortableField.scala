@@ -49,13 +49,11 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
    * @throws MatchError if this field is undefined for the given AnyRef
    */
   def getValue(input: GetterInput): Option[T] = {
-    try {
-      val result = getterVal(input)
-      require(result != null, this + "'s getter is non-functional.  It should never return a null.")
-      result
-    } catch {
-      case matchError: MatchError =>
-        throw new IllegalArgumentException("No getters are defined for input=" + input + " for field=" + this, matchError)
+    val resultOpt = getterVal.attempt(input)
+    require(resultOpt != null, this + "'s getter is non-functional.  It should never return a null.")
+    resultOpt.foreach(result => require(result != null, this + "'s getter is non-functional.  It should never return a null."))
+    resultOpt.getOrElse {
+      throw new MatchError("No getters are defined for input=" + input + " for field=" + this)
     }
   }
 
