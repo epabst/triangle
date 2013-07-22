@@ -183,9 +183,6 @@ object PortableField {
 
   def emptyField[T]: PortableField[T] = emptyFieldVal.asInstanceOf[PortableField[T]]
 
-  //This is here so that getters can be written more simply by not having to explicitly wrap the result in a "Some".
-  implicit def toSome[T](value: T): Option[T] = Some(value)
-
   /** Defines a read-only field for returning the subject item itself (as an Option). */
   def identityField[S <: AnyRef](implicit subjectManifest: ClassManifest[S]) =
     new Field[S](Getter[S,S](subject => Some(subject))) {

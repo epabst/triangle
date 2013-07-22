@@ -68,8 +68,8 @@ abstract class BaseFieldContractSpec extends FunSpec with MustMatchers {
 
     it("must copy from one to multiple") {
       val stringField = toBaseField(
-        Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
-        Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
+        Getter[OtherEntity,String](e => Some(e.name)).withSetter(e => e.name = _, noSetterForEmpty) +
+        Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, noSetterForEmpty)
       )
 
       val myEntity1 = new MyEntity("my1", 1)

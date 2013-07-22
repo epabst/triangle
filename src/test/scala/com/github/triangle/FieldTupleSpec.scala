@@ -166,7 +166,7 @@ class FieldTupleSpec extends FunSpec with MustMatchers {
   }
 
   describe("asUpdater") {
-    val updaterField = FieldTuple(intField, stringField, doubleField).asUpdater[IntStringDouble](v => (v.int, v.string, v.double))
+    val updaterField = FieldTuple(intField, stringField, doubleField).asUpdater[IntStringDouble](v => (Some(v.int), Some(v.string), Some(v.double)))
 
     it("should use each inner field's updater") {
       val map = updaterField.updateWithValue(Map.empty[String,Any], Some(IntStringDouble(5, "Joe", 0.1)))

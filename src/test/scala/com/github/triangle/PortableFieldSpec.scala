@@ -16,7 +16,7 @@ import org.mockito.Mockito
 
 @RunWith(classOf[JUnitRunner])
 class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
-  object LengthField extends SingleGetter[Int]({ case s: String => s.length })
+  object LengthField extends SingleGetter[Int]({ case s: String => Some(s.length) })
 
   //required by contract spec
   def toBaseField[T](field: PortableField[T]) = field
@@ -26,11 +26,11 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     class OtherEntity(var name: String, var myBoolean: Boolean)
 
     it("must be easily instantiable for an Entity") {
-      Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
-      Getter[MyEntity,Int](e => e.number).withSetter(e => e.number = _, noSetterForEmpty)
-      Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty) +
-        Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty)
-      Getter[MyEntity,Int](e => e.number)
+      Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, noSetterForEmpty)
+      Getter[MyEntity,Int](e => Some(e.number)).withSetter(e => e.number = _, noSetterForEmpty)
+      Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, noSetterForEmpty) +
+        Getter[OtherEntity,String](e => Some(e.name)).withSetter(e => e.name = _, noSetterForEmpty)
+      Getter[MyEntity,Int](e => Some(e.number))
     }
 
     describe("copy") {
@@ -214,8 +214,8 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
         val myEntity1 = new MyEntity("my1", 1)
         val otherEntity1 = new OtherEntity("other1", false)
         val stringField = mapField[String]("stringValue") +
-          Getter[OtherEntity,String](e => e.name).withSetter(e => e.name = _, noSetterForEmpty) +
-          Getter[MyEntity,String](e => e.myString).withSetter(e => e.myString = _, noSetterForEmpty)
+          Getter[OtherEntity,String](e => Some(e.name)).withSetter(e => e.name = _, noSetterForEmpty) +
+          Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, noSetterForEmpty)
         stringField.getter.isDefinedAt(GetterInput(myEntity1, otherEntity1)) must be (true)
         stringField.getter.isDefinedAt(GetterInput.single(new Object)) must be (false)
         stringField.getter(GetterInput(myEntity1, otherEntity1)) must be (Some("other1"))
@@ -245,7 +245,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
       object Tuple2IdentityField extends Field(identityField[(Int,Int)])
 
       val field = Getter[String] {
-        case StringIdentityField(Some(string)) && Tuple2IdentityField(Some((x,y))) => string+ x + y
+        case StringIdentityField(Some(string)) && Tuple2IdentityField(Some((x,y))) => Some(string + x + y)
       }
 
       it("must handle accessing more than one item at once") {
@@ -279,7 +279,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
       it("must have a working updater") {
         val formattedField = formatted[Int](mapField[String]("countString"))
         //qualified to point out that it's immutable
-        val result: Map[String,Int] = formattedField.updater(UpdaterInput(immutable.Map.empty[String,Int], 4))
+        val result: Map[String,Int] = formattedField.updater(UpdaterInput(immutable.Map.empty[String,Int], Some(4)))
         result.get("countString") must be (Some("4"))
       }
     }
@@ -297,7 +297,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
       it("must have a working updater") {
         val field = converted(currencyToString, mapField[String]("amountString"), stringToCurrency)
         //qualified to point out that it's immutable
-        val result: Map[String,Double] = field.updater(UpdaterInput(immutable.Map.empty[String,Double], -4.0))
+        val result: Map[String,Double] = field.updater(UpdaterInput(immutable.Map.empty[String,Double], Some(-4.0)))
         result.get("amountString") must be (Some("-4.00"))
       }
     }
@@ -336,7 +336,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     describe("copyAndUpdate") {
       it("must use an initial and some data") {
         val stringField = Updater[Map[String,String],String](
-          (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => error("unexpected")) +
+          (map: Map[String,String]) => (string: String) => map.updated("reply", string.toUpperCase), (_: Map[String,String]) => sys.error("unexpected")) +
           mapField[String]("greeting")
 
         val result = stringField.copyAndUpdate[Map[String,String]](Map("greeting" -> "hello", "ignored" -> "foo"), initial = Map("name" -> "George"))
@@ -383,7 +383,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
     }
 
     it("must support easily specifying a getter as a partial function") {
-      val field = Getter.single[Int] { case subject: AnyRef => 3 }
+      val field = Getter.single[Int] { case subject: AnyRef => Some(3) }
       field.getValue("hello") must be (Some(3))
     }
 
@@ -430,7 +430,7 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
 
   describe("&&") {
     it("must extract both values") {
-      object FirstLetter extends SingleGetter[Char]({ case s: String => s.head })
+      object FirstLetter extends SingleGetter[Char]({ case s: String => Some(s.head) })
 
       val LengthField(Some(length)) && FirstLetter(Some(c)) = "Hello"
       length must be (5)
