@@ -331,6 +331,30 @@ class PortableFieldSpec extends BaseFieldContractSpec with MockitoSugar {
         val result: Map[String,String] = stringField.updateWithValue(Map.empty[String,String], Some("hello"))
         result.get("greeting") must be (Some("HELLO"))
       }
+
+      it("must update multiple fields") {
+        val stringField = toBaseField(
+          Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, noSetterForEmpty) +
+          Setter[MyEntity,String]((e: MyEntity) => (_: Option[String]) => e.number = 50)
+        )
+
+        val myEntity1 = new MyEntity("my1", 1)
+        stringField.updateWithValue(myEntity1, Some("hello"))
+        myEntity1.myString must be ("hello")
+        myEntity1.number must be (50)
+      }
+
+      it("must clear multiple fields") {
+        val stringField = toBaseField(
+          Getter[MyEntity,String](e => Some(e.myString)).withSetter(e => e.myString = _, _.myString = "empty") +
+          Setter((e: MyEntity) => (v: String) => e.number = 50, (e: MyEntity) => e.number = 49)
+        )
+
+        val myEntity1 = new MyEntity("my1", 1)
+        stringField.updateWithValue(myEntity1, None)
+        myEntity1.myString must be ("empty")
+        myEntity1.number must be (49)
+      }
     }
 
     describe("copyAndUpdate") {

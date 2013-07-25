@@ -39,8 +39,9 @@ class NestedFieldSpec extends BaseFieldContractSpec {
       case AnyRefHolder(ref) => Some(ref)
     }, PortableField.mapField[Int]("count"))
     val holder = AnyRefHolder(mutable.Map.empty[String,Any])
-    field.updateWithValue(holder, Some(10))
+    val updatedHolder = field.updateWithValue[AnyRefHolder[mutable.Map[String,Any]]](holder, Some(10))
     holder.ref.get("count") must be (Some(10))
+    updatedHolder must be (updatedHolder)
   }
 
   it("must unwrap the AnyRef for each GetterInput") {

@@ -52,7 +52,9 @@ class NestedField[T](nestedSubjectField: PortableField[AnyRef], val nestedField:
       def attempt(input: UpdaterInput[AnyRef, T]) =
         nestedSubjectField.getterVal.attempt(input.asGetterInput) match {
           case Some(Some(nestedSubject)) =>
-            nestedField.updaterVal.attempt(input.copy(subject = nestedSubject))
+            val inputWithNestedSubject = input.copy(subject = nestedSubject)
+            val updatedNestedSubject = nestedField.updaterVal.attempt(inputWithNestedSubject)
+            Some(nestedSubjectField.updateWithValue(input.subject, Some(updatedNestedSubject)))
           case Some(None) => Some(input.subject)
           case None => None
         }
