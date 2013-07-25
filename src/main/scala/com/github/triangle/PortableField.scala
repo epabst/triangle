@@ -97,7 +97,8 @@ abstract class PortableField[T] extends BaseField with Logging { self =>
     * @return the updated subject, which could be the initial instance
     */
   def updateWithValue[S <: AnyRef](initial: S, value: Option[T], context: GetterInput = GetterInput.empty): S = {
-    update(UpdaterInput(initial, value, context))
+    val updaterInput = UpdaterInput(initial, value, context)
+    update(updaterInput)
   }
 
   /**
@@ -173,10 +174,10 @@ case object && { def unapply[A](a: A) = Some((a, a))}
 
 /** Factory methods for basic PortableFields.  This should be imported as PortableField._. */
 object PortableField {
-  private[triangle] val emptyPartialFunction: PartialFunction[Any,Nothing] = new PartialFunction[Any,Nothing] {
+  private[triangle] val emptyPartialFunction: PartialFunct[Any,Nothing] = new PartialFunct[Any,Nothing] {
     def isDefinedAt(x: Any) = false
 
-    def apply(v1: Any) = throw new MatchError("emptyPartialFunction")
+    def attempt(x: Any) = None
   }
 
   private val emptyFieldVal = new SimplePortableField[Any](emptyPartialFunction, emptyPartialFunction)

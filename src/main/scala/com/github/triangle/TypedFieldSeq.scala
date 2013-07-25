@@ -26,7 +26,8 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
 
         def attempt(input: UpdaterInput[AnyRef, T]) =
           updaters.foldLeft(PartialResult(false, input.subject)) { (partialResult, updater) =>
-            updater.attempt(input.copy(subject = partialResult.tentativeResult)) match {
+            val updatedInput = input.copy(subject = partialResult.tentativeResult)
+            updater.attempt(updatedInput) match {
               case Some(updatedSubject) =>
                 PartialResult(defined = true, updatedSubject)
               case None =>

@@ -23,7 +23,7 @@ abstract class PartialFunct[-A,+B] extends PartialFunction[A,B] { self =>
     attemptedValueOpt
   }
 
-  final def apply(x: A) = attempt(x).getOrElse(throw new MatchError(x))
+  final def apply(x: A) = attempt(x).getOrElse(throw new MatchError(x + " (in function=" + this + ")"))
 
   override def andThen[C](f: (B) => C): PartialFunct[A, C] = {
     new PartialFunct[A, C] {
