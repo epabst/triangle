@@ -64,7 +64,7 @@ trait FieldTuple extends TypedProduct[PortableField[_]] with OriginToString {
   }
 
   // Not a val because it is used in the constructing of the OriginToString superclass
-  protected def packageNamesToExcludeForOriginToString = Seq(classOf[FieldTuple].getPackage.getName)
+  protected def packageNamesToExcludeForOriginToString = BaseField.packageNamesToExcludeForOriginToString
 }
 
 /** The implicit toTupleXOfSomes defs are useful when defining a updater for a FieldTuple. */

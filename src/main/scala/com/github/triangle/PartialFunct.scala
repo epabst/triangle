@@ -18,8 +18,12 @@ abstract class PartialFunct[-A,+B] extends PartialFunction[A,B] { self =>
 
   def attemptAndCheckForNulls(x: A): Option[B] = {
     val attemptedValueOpt = attempt(x)
-    require(attemptedValueOpt != null, this + " is non-functional.  'attempt' should never return a null.")
-    require(attemptedValueOpt != Some(null), this + " is non-functional.  'attempt' should never return a Some(null).")
+    if (attemptedValueOpt == null) {
+      throw new IllegalStateException(this + " is non-functional.  'attempt' should never return a null.")
+    }
+    if (PartialFunct.someWithNull == attemptedValueOpt) {
+      throw new IllegalStateException(this + " is non-functional.  'attempt' should never return a Some(null).")
+    }
     attemptedValueOpt
   }
 
@@ -44,6 +48,8 @@ abstract class PartialFunct[-A,+B] extends PartialFunction[A,B] { self =>
 }
 
 object PartialFunct {
+  private[triangle] val someWithNull = Some(null)
+
   def apply[A,B](f: PartialFunction[A,B]): PartialFunct[A,B] = {
     f match {
       case p: PartialFunct[A,B] => p

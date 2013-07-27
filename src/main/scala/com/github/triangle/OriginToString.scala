@@ -9,17 +9,17 @@ package com.github.triangle
 trait OriginToString {
   protected def packageNamesToExcludeForOriginToString: Seq[String]
 
-  private val origin: StackTraceElement = {
-    val stackTrace = new Throwable().getStackTrace
-    val notableElements = stackTrace.dropWhile { e =>
+  private val originStackTrace = new Throwable().getStackTrace
+
+  private lazy val toStringVal = {
+    val notableElements = originStackTrace.dropWhile { e =>
       packageNamesToExcludeForOriginToString.exists { packageName =>
         e.getClassName.startsWith(packageName)
       }
     }
-    notableElements.headOption.getOrElse(stackTrace.last)
+    val origin: StackTraceElement = notableElements.headOption.getOrElse(originStackTrace.last)
+    super.toString + " [from " + origin + "]"
   }
-
-  private lazy val toStringVal = super.toString + " [from " + origin + "]"
   override def toString = toStringVal
 
   protected def withToString[A,B](string: String)(f: PartialFunct[A,B]): PartialFunct[A,B] = new PartialFunct[A,B] {

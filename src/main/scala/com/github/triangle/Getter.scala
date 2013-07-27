@@ -5,9 +5,16 @@ package com.github.triangle
   * S is the the Readable type to get the value out of.
   */
 class TargetedGetter[S <: AnyRef,T](_getter: S => Option[T])(implicit val subjectManifest: ClassManifest[S])
-    extends SingleGetter[T]({
-      case subject if subjectManifest.erasure.isInstance(subject) =>
-        _getter(subject.asInstanceOf[S])
+    extends SingleGetter[T](new PartialFunct[AnyRef,Option[T]] {
+      private val subjectErasure = subjectManifest.erasure
+
+      def isDefinedAt(subject: AnyRef) = subjectErasure.isInstance(subject)
+
+      def attempt(subject: AnyRef) = {
+        if (isDefinedAt(subject)) {
+          Some(_getter(subject.asInstanceOf[S]))
+        } else None
+      }
     }) with TargetedField[S,T]
 
 class Getter[T](getter: PartialFunction[GetterInput,Option[T]])
@@ -19,7 +26,23 @@ class SingleGetter[T](val singleGetter: PartialFunction[AnyRef,Option[T]])
 
       def isDefinedAt(input: GetterInput) = input.items.exists(singleGetter.isDefinedAt(_))
 
-      def attempt(input: GetterInput) = input.items.view.flatMap(singleGetterFunct.attempt(_)).headOption
+      def attempt(input: GetterInput) = attemptUsingItems(input.items)
+
+      private def attemptUsingItems(items: Seq[AnyRef]): Option[Option[T]] = {
+        if (items.isEmpty) {
+          None
+        } else {
+          val head = items.head
+          singleGetterFunct.attempt(head) match {
+            case result @ Some(_: Some[_]) =>
+              result
+            case result @ Some(None) =>
+              attemptUsingItems(items.tail).orElse(result)
+            case _ =>
+              attemptUsingItems(items.tail)
+          }
+        }
+      }
     })
 
 object Getter {

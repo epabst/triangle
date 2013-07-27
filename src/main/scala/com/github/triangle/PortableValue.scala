@@ -60,7 +60,20 @@ case class PortableValueSeq(portableValues: Traversable[PortableValue]) extends 
     portableValues.foldLeft(initial)((subject, portableValue) => portableValue.update(updaterInput.copy(subject = subject)))
   }
 
-  def get[T](field: PortableField[T]): Option[T] = portableValues.view.flatMap(_.get(field)).headOption
+  def get[T](field: PortableField[T]): Option[T] = get(field, portableValues)
+
+  private[this] def get[T](field: PortableField[T], portableValues: Traversable[PortableValue]): Option[T] = {
+    if (portableValues.isEmpty) {
+      None
+    } else {
+      portableValues.head.get(field) match {
+        case None =>
+          get(field, portableValues.tail)
+        case result =>
+          result
+      }
+    }
+  }
 
   override lazy val toString = "PortableValueSeq(" + portableValues.mkString(",") + ")"
 }

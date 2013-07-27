@@ -12,9 +12,24 @@ case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
       new PartialFunct[GetterInput,Option[T]] {
         def isDefinedAt(input: GetterInput) = getters.exists(_.isDefinedAt(input))
 
-        def attempt(input: GetterInput) = {
-          val lazyValueOpts = getters.view.flatMap(_.attemptAndCheckForNulls(input))
-          lazyValueOpts.find(_.isDefined).orElse(lazyValueOpts.headOption)
+        def attempt(input: GetterInput) = attemptUsingGetters(getters, input)
+
+        private def attemptUsingGetters(getters: Seq[PartialFunct[GetterInput,Option[T]]], input: GetterInput): Option[Option[T]] = {
+          if (getters.isEmpty) {
+            None
+          } else {
+            val headGetter = getters.head
+            val tail = getters.tail
+            headGetter.attempt(input) match {
+              case result @ Some(_: Some[_]) =>
+                result
+              case result @ Some(None) =>
+                val tailResult = attemptUsingGetters(tail, input)
+                if (tailResult.isDefined) tailResult else result
+              case _ =>
+                attemptUsingGetters(tail, input)
+            }
+          }
         }
       }
     }, {

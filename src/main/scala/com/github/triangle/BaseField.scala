@@ -8,7 +8,7 @@ abstract class BaseField extends OriginToString {
   protected val logTag = "triangle"
 
   // Not a val because it is used in the constructing of the OriginToString superclass
-  protected def packageNamesToExcludeForOriginToString = Seq(classOf[BaseField].getPackage.getName)
+  protected def packageNamesToExcludeForOriginToString = BaseField.packageNamesToExcludeForOriginToString
 
   /** Copies this field, the same as {{{copy(AnyRef,AnyRef)}}} except that
     * the copying from {{{from}}} happens immediately (on the current thread),
@@ -59,4 +59,9 @@ abstract class BaseField extends OriginToString {
 
     def applyToDomain(field: BaseField) = field
   })
+}
+
+object BaseField {
+  // Not a val because it is used in the constructing of the OriginToString superclass
+  private[triangle] val packageNamesToExcludeForOriginToString = Seq(classOf[BaseField].getPackage.getName)
 }
