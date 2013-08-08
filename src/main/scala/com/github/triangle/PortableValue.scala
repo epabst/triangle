@@ -83,5 +83,25 @@ object PortableValue {
     override lazy val toString = "PortableValue.empty"
   }
 
+  /** A PortableValue with nothing in it.  This is useful for error conditions where no value can be returned. */
+  lazy val nothing: PortableValue = new PortableValue {
+
+    /** Returns the value contained in this value for the given PortableField. */
+    def get[T](field: PortableField[T]) =
+      throw new UnsupportedOperationException("Can't get the value of Nothing")
+
+    /**
+     * Update the {{{updaterInput.subject}}} with this value.
+     * The new updated subject is returned.
+     * Mutable subjects are modified in place as well as being returned.
+     * @param updaterInput an UpdaterInput that doesn't have a value.
+     *                     This is because the value is not needed since it's already in the PortableValue.
+     */
+    def update[S <: AnyRef](updaterInput: UpdaterInput[S, Nothing]) =
+      throw new UnsupportedOperationException("Can't get the value of Nothing")
+
+    override lazy val toString = "PortableValue.nothing"
+  }
+
   def apply(portableValues: PortableValue1[_]*): PortableValue = new PortableValueSeq(portableValues)
 }
