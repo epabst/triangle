@@ -5,8 +5,9 @@ package com.github.triangle
  * @author Eric Pabst (epabst@gmail.com)
  *         Date: 8/25/12
  *         Time: 1:02 PM
+ * @param fields the PortableFields.  It is a List since it is never modified, and should use LinearSeqOptimized.
  */
-case class TypedFieldSeq[T](fields: Vector[PortableField[T]])
+case class TypedFieldSeq[T](fields: List[PortableField[T]])
     extends SimplePortableField[T]({
       val getters = fields.map(field => field.getterVal)
       new PartialFunct[GetterInput,Option[T]] {
@@ -72,5 +73,5 @@ private case class PartialResult[T](defined: Boolean, tentativeResult: T) {
 }
 
 object TypedFieldSeq {
-  def apply[T](fields: PortableField[T]*): TypedFieldSeq[T] = TypedFieldSeq(Vector(fields:_*))
+  def apply[T](fields: PortableField[T]*): TypedFieldSeq[T] = TypedFieldSeq(List(fields:_*))
 }
