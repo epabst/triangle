@@ -1,0 +1,31 @@
+group = 'com.github.epabst.triangle'
+version = '0.6-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        //classpath 'com.android.tools.build:gradle:0.6.+'
+    }
+}
+apply plugin: 'scala'
+
+repositories {
+    mavenCentral()
+}
+
+scalaVersion = '2.9.2'
+
+dependencies {
+	compile "org.scala-lang:scala-library:$scalaVersion"
+	compile 'org.slf4j:slf4j-api:1.6.1'
+	testCompile 'org.slf4j:slf4j-jdk14:1.6.1'
+	testCompile 'org.mockito:mockito-core:1.8.5'
+	testCompile 'junit:junit:4.8.2'
+	testCompile "org.scalatest:scalatest_$scalaVersion:1.8"
+
+        //todo eliminate easymock as a dependency
+	testCompile 'org.easymock:easymock:2.5.2'
+}
+
