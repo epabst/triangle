@@ -1,21 +1,13 @@
 group = 'com.github.epabst.triangle'
 version = '0.6-SNAPSHOT'
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        //classpath 'com.android.tools.build:gradle:0.6.+'
-    }
-}
 apply plugin: 'scala'
 
 repositories {
     mavenCentral()
 }
 
-scalaVersion = '2.9.2'
+def scalaVersion = '2.9.2'
 
 dependencies {
 	compile "org.scala-lang:scala-library:$scalaVersion"
